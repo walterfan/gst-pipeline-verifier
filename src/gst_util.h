@@ -8,6 +8,9 @@
 #include <gst/sdp/sdp.h>
 #include <gst/rtp/rtp.h>
 
+namespace wfan {
+
+
 #define VIDEO_PAD_NAME "video"
 #define AUDIO_PAD_NAME "audio"
 #define SRC_PAD_NAME   "src"
@@ -25,17 +28,11 @@ void print_caps (const GstCaps * caps, const gchar * pfx);
 
 void print_pad_capabilities (GstPad *pad, gchar *pad_name);
 
-bool has_option(
-    const std::vector<std::string_view>& args, 
-    const std::string_view& option_name);
-
-std::string_view get_option(
-    const std::vector<std::string_view>& args, 
-    const std::string_view& option_name) ;
-
 void check_pads(GstElement *element) ;
 
 void log_handler(const gchar *log_domain,
                  GLogLevelFlags log_level,
                  const gchar *message,
                  gpointer user_data);
+
+} //namespace wfan

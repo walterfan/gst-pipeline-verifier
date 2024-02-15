@@ -6,7 +6,8 @@
 #include "logger.h"
 
 using namespace std;
-constexpr auto VERSION = "1.0.0";
+
+namespace wfan {
 
 static const std::string DELIMITER = " ";
 
@@ -88,40 +89,28 @@ std::shared_ptr<ElementConfig> PipelineConfig::get_element_config(const std::str
     return nullptr;
 }
 
-int PipelineBuilder::init(int argc, char *argv[]) {
+PipelineBuilder::PipelineBuilder(const std::string& config_file)
+: m_config_file(config_file) {
+    
+    yaml_to_str_vec_map(std::string(m_config_file), "pipelines", m_pipeline_config);
+}
+
+int PipelineBuilder::init(int argc, char *argv[], const cmd_args_t& args) {
     gst_init(&argc, &argv);
     
-    const std::vector<std::string_view> args(argv, argv + argc);
-    auto pipeline_config_file = get_option(args, "-f");
-    if (pipeline_config_file.empty()) {
-        DLOG("PipelineBuilder init not give pipeline yaml, use default configuration ./etc/pipeline.yaml" );
-        pipeline_config_file = "./etc/pipeline.yaml";
-    }
- 
-    if (has_option(args, "-v")) {
-        cout << "version: " << VERSION << endl;
-        return 1;
-    }
-
-    std::map<std::string, std::vector<std::string>> pipelines;
-    int ret = yaml_to_str_vec_map(std::string(pipeline_config_file), "pipelines", pipelines);
-    if (ret < 0 || pipelines.empty()) {
-        DLOG("PipelineBuilder init not read pipeline yaml: {} ", pipeline_config_file);
+    if (m_pipeline_config.empty()) {
+        ELOG("PipelineBuilder init not read pipeline yaml: {} ", m_config_file);
         return -1;
     }
-    
+
     m_pipeline_name = get_option(args, "-p");
     if (m_pipeline_name.empty()) {
         m_pipeline_name = "pipeline_test";
     }
 
-    if (has_option(args, "-l")) {
-        list_pipelines(pipelines);
-        return 2;
-    }
-    auto it = pipelines.find(std::string(m_pipeline_name));
-    if (it == pipelines.end()) {
-        DLOG("PipelineBuilder init not found pipeline {}",  m_pipeline_name);
+    auto it = m_pipeline_config.find(std::string(m_pipeline_name));
+    if (it == m_pipeline_config.end()) {
+        ELOG("Do not found pipeline {}",  m_pipeline_name);
         return -1;
     }
 
@@ -132,13 +121,13 @@ int PipelineBuilder::init(int argc, char *argv[]) {
     m_loop = g_main_loop_new(NULL, FALSE);
 
     m_pipelie_config = std::make_shared<PipelineConfig>(it->first, it->second);
-    DLOG("PipelineBuilder init success for pipeline {}",  m_pipeline_name);
+    DLOG("Init success for pipeline {}",  m_pipeline_name);
     return 0;
 }
 
-void PipelineBuilder::list_pipelines(std::map<std::string, std::vector<std::string>>& pipelines) {
-    auto it = pipelines.begin();
-    for (;it != pipelines.end(); ++it) {
+void PipelineBuilder::list_pipelines() {
+    auto it = m_pipeline_config.begin();
+    for (;it != m_pipeline_config.end(); ++it) {
         if (!m_pipeline_name.empty()) {
             if (m_pipeline_name != it->first) {
                 continue;
@@ -430,3 +419,5 @@ void PipelineBuilder::on_state_changed(GstMessage* msg) {
 void PipelineBuilder::on_stream_started(GstMessage* msg) {
     DLOG("on_stream_started:");
 }
+
+} //namespace wfan

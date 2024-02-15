@@ -22,11 +22,13 @@
 #include <memory>
 #include <map>
 
+namespace wfan {
+
 class Logger
 {
 public:
-    Logger();
-    ~Logger();
+    Logger()  = default;
+    ~Logger() = default;
     Logger(const Logger&) = delete;
     Logger& operator=(const Logger&) = delete;
     
@@ -47,6 +49,6 @@ private:
 #define WLOG(...) SPDLOG_LOGGER_WARN(Logger::get_instance().get_logger(), __VA_ARGS__)
 #define ELOG(...) SPDLOG_LOGGER_ERROR(Logger::get_instance().get_logger(), __VA_ARGS__)
 
-
+} //namespace wfan
 
 

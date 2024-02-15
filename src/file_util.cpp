@@ -6,6 +6,8 @@
 #include "file_util.h"
 #include "yaml-cpp/yaml.h"
 
+namespace wfan {
+
 int yaml_to_str_vec_map(const std::string& path, 
     const std::string& key1, 
     std::map<std::string, std::vector<std::string>>& config) {
@@ -27,8 +29,10 @@ int yaml_to_str_vec_map(const std::string& path,
     return 0;
 }
 
-YAML::Node load_yaml(const std::string& path, const std::string& key) {
-    YAML::Node rootNode = YAML::LoadFile(path);
-    return rootNode[key];
+std::map<std::string, std::string> read_section(const std::string& file_path, 
+    const std::string& section_path) {
+    YAML::Node config = YAML::LoadFile(file_path);
+    return config[section_path].as<std::map<std::string, std::string>>();
 }
 
+} //namespace wfan

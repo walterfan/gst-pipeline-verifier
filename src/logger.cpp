@@ -5,16 +5,7 @@
 using namespace spdlog;
 using namespace sinks;
 
-Logger::Logger()
-{
-    
-}
-
-Logger::~Logger()
-{
-    
-}
-
+namespace wfan {
 Logger& Logger::get_instance()
 {
     static Logger instance;
@@ -129,3 +120,4 @@ void Logger::reset_level(int level, int flush_level, int flush_interval)
     spdlog::flush_every(std::chrono::seconds(flush_interval));
 }
 
+}//namespace wfan

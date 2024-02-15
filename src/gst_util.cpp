@@ -1,5 +1,6 @@
 #include "gst_util.h"
 
+namespace wfan {
 GstCaps* get_default_caps() 
 {
     
@@ -87,29 +88,6 @@ void print_pad_capabilities (GstPad *pad, gchar *pad_name)
 
 }
 
-bool has_option(
-    const std::vector<std::string_view>& args, 
-    const std::string_view& option_name) {
-    for (auto it = args.begin(), end = args.end(); it != end; ++it) {
-        if (*it == option_name)
-            return true;
-    }
-    
-    return false;
-}
-
-std::string_view get_option(
-    const std::vector<std::string_view>& args, 
-    const std::string_view& option_name) {
-    for (auto it = args.begin(), end = args.end(); it != end; ++it) {
-        if (*it == option_name)
-            if (it + 1 != end)
-                return *(it + 1);
-    }
-    
-    return "";
-}
-
 void check_pads(GstElement *element) {
     GstIterator *iter = gst_element_iterate_pads(element);
     GValue *elem;
@@ -157,3 +135,5 @@ if (handlerid != 0)
     handlerid = 0;
 }
 */
+
+}//namespace wfan

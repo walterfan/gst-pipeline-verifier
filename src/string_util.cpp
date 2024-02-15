@@ -1,5 +1,7 @@
 #include "string_util.h"
 
+namespace wfan {
+
 bool endswith(const std::string& filename, const std::string& suffix) {
     if (filename.length() >= suffix.length()) {
         return 0 == filename.compare (filename.length() 
@@ -166,3 +168,27 @@ int tokenize(const std::string& input, std::vector<std::string>& tokens) {
     }
     return count;
 }
+
+bool has_option(
+    const std::vector<std::string_view>& args, 
+    const std::string_view& option_name) {
+    for (auto it = args.begin(), end = args.end(); it != end; ++it) {
+        if (*it == option_name)
+            return true;
+    }
+    
+    return false;
+}
+
+std::string_view get_option(
+    const std::vector<std::string_view>& args, 
+    const std::string_view& option_name) {
+    for (auto it = args.begin(), end = args.end(); it != end; ++it) {
+        if (*it == option_name)
+            if (it + 1 != end)
+                return *(it + 1);
+    }
+    
+    return "";
+}
+}//namespace wfan

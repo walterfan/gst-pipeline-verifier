@@ -74,3 +74,6 @@ pipelines:
     - wavescope
     - videoconvert
     - autovideosink
+logger:
+  log_level: 3
+  log_console: 0

@@ -1,26 +1,23 @@
 #pragma once
+
 #include <string>
 #include <cstdint>
 #include <sstream>
 #include <vector>
 #include <sstream>
 
+namespace wfan {
+
+using cmd_args_t = std::vector<std::string_view>;
+
 bool endswith(const std::string& filename, const std::string& suffix);
 
 bool startswith(const std::string& filename, const std::string& prefix);
-
-std::string trim_prefix_suffix(std::string& filename, 
-    const std::string& prefix, 
-    const std::string& suffix);
-
-
-std::string trim(const std::string& str, const std::string& whitespace );
 
 int tokenize(const std::string& input, std::vector<std::string>& tokens);
 
 std::string substr_no_prefix(std::string& filename, 
     const std::string& prefix, uint32_t len);
-
 
 template<class T>
 T str_to_num(const std::string timestr) {
@@ -38,6 +35,11 @@ int find_closed_smaller_value(std::vector<std::string>& numbers, const std::stri
 
 int find_closed_bigger_value(std::vector<std::string>& numbers, const std::string& target);
 
+std::string trim_prefix_suffix(std::string& filename, 
+    const std::string& prefix, 
+    const std::string& suffix);
+
+std::string trim(const std::string& str, const std::string& whitespace );
 
 inline std::string &trim_space(std::string &str)
 {
@@ -52,3 +54,13 @@ static inline std::string trim_copy(std::string s) {
     trim_space(s);
     return s;
 }
+
+bool has_option(
+    const std::vector<std::string_view>& args, 
+    const std::string_view& option_name);
+
+std::string_view get_option(
+    const std::vector<std::string_view>& args, 
+    const std::string_view& option_name) ;
+
+} //namespace wfan

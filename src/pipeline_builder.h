@@ -6,6 +6,10 @@
 #include <thread>
 #include <vector>
 #include <map>
+#include "string_util.h"
+#include "file_util.h"
+
+namespace wfan {
 
 struct ElementConfig {
     ElementConfig(const std::string& desc);
@@ -41,14 +45,17 @@ struct PipelineRepo {
 
 class PipelineBuilder {
 public:
-    int init(int argc, char *argv[]);
+    PipelineBuilder(const std::string& config_file);
+    void list_pipelines();
+
+    int init(int argc, char *argv[], const cmd_args_t& args);
     int clean();
     int build();
     int start();
     int stop();
 
 private:
-    void list_pipelines(std::map<std::string, std::vector<std::string>>& pipelines);
+    
     GstElement* create_element(const std::string& factory, const std::string& name);
     GstElement* get_element(const std::string& name);
     
@@ -67,6 +74,8 @@ private:
     void on_state_changed(GstMessage* msg);
     void on_stream_started(GstMessage* msg);
 
+    std::string m_config_file;
+    pipeline_config_t m_pipeline_config;
     std::map<std::string, GstElement*> m_elements;
     GstBus* m_bus;
     GMainLoop* m_loop;
@@ -74,3 +83,5 @@ private:
     std::string m_pipeline_name;
     std::shared_ptr<PipelineConfig> m_pipelie_config;
 };
+
+} //namespace wfan
