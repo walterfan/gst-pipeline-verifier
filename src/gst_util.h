@@ -10,12 +10,10 @@
 
 namespace wfan {
 
-
 #define VIDEO_PAD_NAME "video"
 #define AUDIO_PAD_NAME "audio"
 #define SRC_PAD_NAME   "src"
 #define SINK_PAD_NAME  "sink"
-
 #define TIME_FMT "%Y%m%d_%H%M%S"
 
 GstCaps* get_default_caps();

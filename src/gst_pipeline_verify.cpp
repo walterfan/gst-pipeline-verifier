@@ -36,7 +36,7 @@ int verify_pipeline(int argc, char *argv[], void* param=nullptr) {
         std::cerr << "Use default configuration " << CONFIG_FILE << std::endl;
         config_file = CONFIG_FILE;
     }
- 
+    //TODO: set log level according to config file
     //init logger
     auto& logger = Logger::get_instance();
     logger.init("./log", "gst_pipeline_verify", 20, 20);

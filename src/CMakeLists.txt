@@ -2,6 +2,7 @@
 add_executable(gst-pipeline-verify 
     gst_pipeline_verify.cpp
     pipeline_builder.cpp 
+    pipeline_config.cpp
     gst_util.cpp 
     string_util.cpp
     file_util.cpp
