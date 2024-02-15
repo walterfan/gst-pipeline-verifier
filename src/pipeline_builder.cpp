@@ -89,13 +89,13 @@ std::shared_ptr<ElementConfig> PipelineConfig::get_element_config(const std::str
 }
 
 int PipelineBuilder::init(int argc, char *argv[]) {
-    gst_init(NULL, NULL);
+    gst_init(&argc, &argv);
     
     const std::vector<std::string_view> args(argv, argv + argc);
     auto pipeline_config_file = get_option(args, "-f");
     if (pipeline_config_file.empty()) {
-        DLOG("PipelineBuilder init not give pipeline yaml" );
-        return -1;
+        DLOG("PipelineBuilder init not give pipeline yaml, use default configuration ./etc/pipeline.yaml" );
+        pipeline_config_file = "./etc/pipeline.yaml";
     }
  
     if (has_option(args, "-v")) {
@@ -207,7 +207,7 @@ int PipelineBuilder::stop() {
 
 GstElement* PipelineBuilder::create_element(const std::string& factory, 
     const std::string& name) {
-    DLOG("create {}", factory);
+    
     GstElement* element = gst_element_factory_make (factory.c_str(), name.c_str());
     if (!element) {
         DLOG("create failed for element {} name={}",  factory, name);
@@ -317,7 +317,7 @@ bool PipelineBuilder::link_elements() {
             if(link_ret) {                                 
                 DLOG("link succed for {} and {}", e1n, e2n);
             } else {
-                spdlog::error("link failed for {} and {}", e1n, e2n);
+                DLOG("link failed for {} and {}", e1n, e2n);
             }
             g_free(e1n);        
             g_free(e2n);                                         
@@ -391,18 +391,18 @@ void PipelineBuilder::on_pad_added(GstElement* element, GstPad* pad, gpointer da
 }
 
 void PipelineBuilder::on_bus_msg_eos() {
-    spdlog::error("on_bus_msg_eos:");
+    ILOG("on_bus_msg_eos");
     g_main_loop_quit(m_loop);
 }
 
 void PipelineBuilder::on_bus_msg_error(GstMessage* msg) {
-    spdlog::error("on_bus_msg_error:");
+    ELOG("on_bus_msg_error:");
     gchar* debug = nullptr;
     GError* error = nullptr;
     gst_message_parse_error(msg, &error, &debug);
-    DLOG("there is error {} for {}", error->message,  GST_OBJECT_NAME(msg->src));
+    ELOG("there is error {} for {}", error->message,  GST_OBJECT_NAME(msg->src));
     if (debug) {
-        spdlog::error("error details: {}", debug);
+        ELOG("error details: {}", debug);
     }
 
     g_free(debug);
@@ -412,7 +412,7 @@ void PipelineBuilder::on_bus_msg_error(GstMessage* msg) {
 }
 
 void PipelineBuilder::on_bus_msg_warning(GstMessage* msg) {
-    spdlog::error("on_bus_msg_warning:");
+    DLOG("on_bus_msg_warning:");
 }
 
 void PipelineBuilder::on_state_changed(GstMessage* msg) {

@@ -1,4 +1,4 @@
-# replace - with !, then use gst-launch-1.0 $pipeline
+# replace - with !, then use `gst-launch-1.0 $pipeline`
 pipelines:
   pipeline_jetson:
     - v4l2src
@@ -37,6 +37,13 @@ pipelines:
     - videotestsrc num-buffers=100
     - capsfilter caps="video/x-raw, width=1920, height=1080, framerate=30/1"
     - autovideosink
+
+  mac_capture_screen:
+    - avfvideosrc capture-screen=true 
+    - videoscale 
+    - videoconvert 
+    - capsfilter caps="ideo/x-raw,width=640,height=480"
+    - osxvideosink
 
   pipeline_test_rtmp:
     - videotestsrc 
