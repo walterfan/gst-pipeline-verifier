@@ -1,0 +1,22 @@
+pipelines:
+  camera_to_mp4:
+    - v4l2src device=/dev/video0 num-buffers=100
+    - capsfilter caps="video/x-raw,width=1920, height=1080, framerate=60/1"
+    - nvvideoconvert
+    - videorate max-rate=30
+    - nvv4l2h264enc
+    - h264parse
+    - mp4mux
+    - filesink location=test.mp4
+
+
+  camera_to_rtmp:
+    - v4l2src device=/dev/video0
+    - capsfilter caps="video/x-raw,width=1920, height=1080, framerate=60/1"
+    - nvvideoconvert
+    - videorate max-rate=30
+    - nvv4l2h264enc
+    - h264parse
+    - flvmux streamable=true
+    - rtmpsink location=rtmp://192.168.104.199:1935/live/waltertest
+    

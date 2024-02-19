@@ -139,7 +139,7 @@ int tokenize(const std::string& input, std::vector<std::string>& tokens) {
         char c = input[i];
         oss << c;
       
-        if (c == '"') {
+        if (c == '"' || c == '\'') {
             if (!is_in_quotation) {
                 is_in_quotation = true;
             } else {
