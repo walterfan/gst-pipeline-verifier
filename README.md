@@ -22,7 +22,7 @@ gstreamer1.0-plugins-bad \
 gstreamer1.0-plugins-ugly \
 gstreamer1.0-plugins-good \
 libgstreamer-plugins-bad1.0-dev \
-gstreamer1.0-plugins-base-apps
+gstreamer1.0-plugins-base-apps \
 libfmt-dev \
 libspdlog-dev \
 libyaml-cpp-dev \
@@ -69,14 +69,14 @@ gst-launch-1.0 -vv filesrc location=material/talk.mp4 \
 ! decodebin \
 ! videoconvert ! identity drop-allocation=1 \
 ! x264enc tune=zerolatency ! flvmux streamable=true \
-! rtmpsink location='rtmp://192.168.104.199:1935/live/waltertest'
+! rtmpsink location='rtmp://192.168.0.108:1935/live/waltertest'
 ```
 
 * or run the C++ program
 
 ```
 ./build-with-vcpkg.sh
-./bin/gst-pipeline-verify -f ./example/etc/pipeline.yaml -p pipeline_test_rtmp
+./bin/gst-pipeline-verify -f ./etc/config.yaml -p pipeline_test_rtmp
 ```
 
 
