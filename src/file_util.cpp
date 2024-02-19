@@ -1,6 +1,5 @@
 #include <iostream>
 #include <fstream>
-#include <execution>
 #include <dirent.h>
 #include "string_util.h"
 #include "file_util.h"

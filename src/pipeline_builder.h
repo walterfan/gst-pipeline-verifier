@@ -15,7 +15,7 @@ namespace wfan {
 class PipelineBuilder {
 public:
     PipelineBuilder(const std::string& config_file);
-    void list_pipelines();
+    void list_pipelines(const std::string& pipeline_name);
 
     int init(int argc, char *argv[], const cmd_args_t& args);
     int clean();

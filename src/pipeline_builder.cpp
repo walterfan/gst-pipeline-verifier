@@ -45,11 +45,11 @@ int PipelineBuilder::init(int argc, char *argv[], const cmd_args_t& args) {
     return 0;
 }
 
-void PipelineBuilder::list_pipelines() {
+void PipelineBuilder::list_pipelines(const std::string& pipeline_name) {
     auto it = m_pipeline_config.begin();
     for (;it != m_pipeline_config.end(); ++it) {
-        if (!m_pipeline_name.empty()) {
-            if (m_pipeline_name != it->first) {
+        if (!pipeline_name.empty()) {
+            if (pipeline_name != it->first) {
                 continue;
             }
         }

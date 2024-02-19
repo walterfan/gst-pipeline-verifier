@@ -57,7 +57,7 @@ int verify_pipeline(int argc, char *argv[], void* param=nullptr) {
     auto verifier = std::make_unique<PipelineBuilder>(std::string(config_file));
     
     if (has_option(args, "-l")) {
-        verifier->list_pipelines();
+        verifier->list_pipelines(std::string(get_option(args, "-p")));
         return 0;
     }
 
