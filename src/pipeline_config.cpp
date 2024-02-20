@@ -20,6 +20,16 @@ void ElementConfig::set_factory(const std::string& factory) {
     }
 }
 
+
+void ElementConfig::insert_prop(const std::string& key, const std::string& value) {
+    if (key == "name") {
+        m_name = value;
+        return;
+    }
+    m_props[key] = value;
+    DLOG("key={}, value={}", key, value);        
+}
+
 void ElementConfig::parse_prop(const std::string& token) {
     if (token.empty()) {
         return;
@@ -27,11 +37,7 @@ void ElementConfig::parse_prop(const std::string& token) {
     
     size_t pos = 0;
     if ((pos = token.find("=")) != string::npos) {
-        auto pair = std::make_pair<std::string, std::string>(
-            trim_copy(token.substr(0, pos)),
-            trim_copy(token.substr(pos+1)));
-        m_props.insert(pair);
-        DLOG("key={}, value={}", pair.first, pair.second);
+        insert_prop(trim_copy(token.substr(0, pos)), trim_copy(token.substr(pos+1)));
     } else {
         if (m_factory.empty()) {
             m_factory = token;

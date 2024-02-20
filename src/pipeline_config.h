@@ -16,6 +16,7 @@ struct ElementConfig {
     void parse_desc(const std::string& desc);
     void parse_prop(const std::string& token);
     void set_factory(const std::string& factory);
+    void insert_prop(const std::string& key, const std::string& value);
     std::string m_name;
     std::string m_factory;
     std::map<std::string, std::string> m_props;
