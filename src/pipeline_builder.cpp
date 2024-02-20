@@ -74,16 +74,41 @@ void PipelineBuilder::list_pipelines(const std::string& pipeline_name) {
 }
 
 int PipelineBuilder::build() {
-    DLOG("create elements"); 
+    int failed_count = 0;
+    
     for(auto& ele_cfg_ptr: m_pipelie_config->m_elements_config) {        
-        create_element(ele_cfg_ptr->m_factory, ele_cfg_ptr->m_name);
+        auto created_ele_ptr = create_element(ele_cfg_ptr->m_factory, ele_cfg_ptr->m_name);
+        if (!created_ele_ptr) {
+            failed_count ++;
+        }
     }
-    DLOG("add elements"); 
+    
+    if (failed_count > 0) {
+        ELOG("create elements, failed_count={}", failed_count);
+        return -1;
+    } 
+    DLOG("created elements");
+
     for(auto& ele_cfg_ptr: m_pipelie_config->m_elements_config) {
-        add_element(ele_cfg_ptr->m_name);
+        auto add_ret = add_element(ele_cfg_ptr->m_name);
+        if (!add_ret) {
+            failed_count ++;
+        }
     }
-    DLOG("link elements"); 
-    link_elements();
+        
+    if (failed_count > 0) {
+        ELOG("create elements, failed_count={}", failed_count);
+        return -1;
+    } 
+    DLOG("added elements");  
+    
+    auto ret = link_elements();
+    
+    if (ret) {
+        ELOG("link elements: {}", ret); 
+        return -1;
+    }
+    DLOG("linked elements"); 
     return 0;
 }
 
@@ -205,7 +230,7 @@ bool PipelineBuilder::del_element(const std::string& name) {
 bool PipelineBuilder::link_elements() {
     auto& elements_configs = m_pipelie_config->m_elements_config;
     auto it = elements_configs.begin();
-
+    int failed_count = 0;
     while( it != elements_configs.end()) {
         GstElement* e1 = get_element((*it)->m_name);
         //for decodebin, cannot link directly
@@ -227,13 +252,18 @@ bool PipelineBuilder::link_elements() {
                 DLOG("link succed for {} and {}", e1n, e2n);
             } else {
                 DLOG("link failed for {} and {}", e1n, e2n);
+                failed_count ++;
             }
             g_free(e1n);        
             g_free(e2n);                                         
         }
     }
+    if (failed_count == 0) {
+        return true;
+    } else {
+        return false;
+    }
     
-    return true;
 }
 
 bool PipelineBuilder::unlink_elements() {
