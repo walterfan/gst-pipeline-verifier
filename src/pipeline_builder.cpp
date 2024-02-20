@@ -231,7 +231,7 @@ bool PipelineBuilder::link_elements() {
     auto& elements_configs = m_pipelie_config->m_elements_config;
     auto it = elements_configs.begin();
     int failed_count = 0;
-    while( it != elements_configs.end()) {
+    while( it != elements_configs.end() && failed_count == 0) {
         GstElement* e1 = get_element((*it)->m_name);
         //for decodebin, cannot link directly
         if ((*it)->m_factory == "decodebin") {
@@ -258,11 +258,8 @@ bool PipelineBuilder::link_elements() {
             g_free(e2n);                                         
         }
     }
-    if (failed_count == 0) {
-        return true;
-    } else {
-        return false;
-    }
+    
+    return failed_count == 0? true:false;
     
 }
 
