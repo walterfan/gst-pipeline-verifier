@@ -104,8 +104,8 @@ int PipelineBuilder::build() {
     
     auto ret = link_elements();
     
-    if (ret) {
-        ELOG("link elements: {}", ret); 
+    if (!ret) {
+        ELOG("link elements failed"); 
         return -1;
     }
     DLOG("linked elements"); 
