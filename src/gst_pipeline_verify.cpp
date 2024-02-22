@@ -8,18 +8,18 @@
 #include "pipeline_builder.h"
 #include "logger.h"
 #include "string_util.h"
+#include "file_util.h"
 
 using namespace wfan;
     
-#define CHECK_VALUE(msg, value, expect)                                      \
+#define CHECK_VALUE(msg, value, expect)                          \
     do {                                                         \
-        if ((value) != expect) {                                        \
-            ELOG(msg, value);                                      \
-            return value;                                          \
+        if ((value) != expect) {                                 \
+            ELOG(msg, value);                                    \
+            return value;                                        \
         } else {                                                 \
-            ILOG(msg, value);                                      \
+            ILOG(msg, value);                                    \
         }                                                        \
-                                                                 \
     } while (0)
 
 constexpr auto SPDLOG_FLUSH_SEC = 3;
@@ -27,6 +27,10 @@ constexpr auto log_pattern = "[%Y-%m-%d %H:%M:%S.%e] [%n] [%l] [%t] [%s:%#] (%!)
 constexpr auto CONFIG_FILE = "./etc/config.yaml";
 constexpr auto VERSION = "1.0.0";
 constexpr auto USAGE = "-f [config_file] -p [pipeline_name] [-h -v]";
+constexpr auto KEY_GENERAL = "general";
+constexpr auto KEY_LOG_FOLDER = "log_folder";
+constexpr auto KEY_LOG_NAME   = "log_name";
+constexpr auto KEY_LOG_LEVEL  = "log_level";
 
 int verify_pipeline(int argc, char *argv[], void* param=nullptr) {
     // read config file
@@ -36,11 +40,12 @@ int verify_pipeline(int argc, char *argv[], void* param=nullptr) {
         std::cerr << "Use default configuration " << CONFIG_FILE << std::endl;
         config_file = CONFIG_FILE;
     }
-    //TODO: set log level according to config file
+    auto general_config = read_section(std::string(config_file), KEY_GENERAL);
     //init logger
     auto& logger = Logger::get_instance();
-    logger.init("./log", "gst_pipeline_verify", 20, 20);
-    logger.reset_level(SPDLOG_LEVEL_DEBUG, SPDLOG_LEVEL_ERROR, SPDLOG_FLUSH_SEC);
+    logger.init(general_config[KEY_LOG_FOLDER], general_config[KEY_LOG_NAME], 20, 20);
+    auto log_level = std::stoi(general_config[KEY_LOG_LEVEL]);
+    logger.reset_level(log_level, SPDLOG_LEVEL_ERROR, SPDLOG_FLUSH_SEC);
     
     //handle arguments
     if (has_option(args, "-v")) {

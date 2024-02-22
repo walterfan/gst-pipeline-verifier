@@ -44,6 +44,7 @@ private:
     void on_stream_started(GstMessage* msg);
 
     std::string m_config_file;
+    config_map_t m_general_config;
     pipeline_config_t m_pipeline_config;
     std::map<std::string, GstElement*> m_elements;
     GstBus* m_bus;

@@ -7,12 +7,14 @@
 
 using namespace std;
 
+constexpr auto KEY_DEFAULT_PIPELINE = "default_pipeline";
+
 namespace wfan {
 
 PipelineBuilder::PipelineBuilder(const std::string& config_file)
 : m_config_file(config_file) {
-    
-    yaml_to_str_vec_map(std::string(m_config_file), "pipelines", m_pipeline_config);
+    yaml_to_str_vec_map(m_config_file, "pipelines", m_pipeline_config);
+    m_general_config = read_section(m_config_file, "general");
 }
 
 int PipelineBuilder::init(int argc, char *argv[], const cmd_args_t& args) {
@@ -25,7 +27,7 @@ int PipelineBuilder::init(int argc, char *argv[], const cmd_args_t& args) {
 
     m_pipeline_name = get_option(args, "-p");
     if (m_pipeline_name.empty()) {
-        m_pipeline_name = "pipeline_test";
+        m_pipeline_name = m_general_config[KEY_DEFAULT_PIPELINE];
     }
 
     auto it = m_pipeline_config.find(std::string(m_pipeline_name));
