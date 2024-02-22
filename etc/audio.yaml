@@ -9,3 +9,13 @@ pipelines:
     - audioresample 
     - capsfilter caps="audio/x-raw,format=S16LE,channels=1,rate=16000" 
     - autoaudiosink
+  test_wav_scope:
+    - alsasrc device=hw:3,0 
+    - audioconvert 
+    - wavescope 
+    - queue name=q1 
+    - videoconvert 
+    - x264enc 
+    - flvmux streamable=true 
+    - queue  name=q2
+    - rtmpsink location="rtmp://localhost:1935/live/wavetest"

@@ -17,7 +17,7 @@ pipelines:
     - identity drop-allocation=1 
     - x264enc speed-preset=5 tune=4 byte-stream=true threads=1 key-int-max=15 intra-refresh=true
     - flvmux streamable=true
-    - rtmpsink location="rtmp://192.168.104.214:1935/live/waltertest"
+    - rtmpsink location="rtmp://localhost:1935/live/waltertest"
 
   pipeline_rtp_sender:
     - v4l2src device=/dev/video1
@@ -25,7 +25,7 @@ pipelines:
     - videoconvert 
     - omxh264enc video/x-h264,stream-format=byte-stream
     - rtph264pay 
-    - udpsink host=192.168.104.214 port=5000
+    - udpsink host=localhost port=5000
 
   pipeline_rtp_receiver:
     - udpsrc  port=5000 caps=application/x-rtp
@@ -52,7 +52,7 @@ pipelines:
     - videoconvert 
     - x264enc speed-preset=5 tune=4
     - flvmux streamable=true 
-    - rtmpsink location=rtmp://192.168.104.199:1935/live/waltertest
+    - rtmpsink location=rtmp://localhost:1935/live/waltertest
 
   pipeline_test_pcm:
     - filesrc location=material/16k16bit.pcm
