@@ -3,7 +3,6 @@ general:
   log_folder: ./log
   log_name: pipeline_verify
   log_level: 2 # 0:trace, 1: debug, 2: info
-  log_console: 1 # 1: print log to console, 0: not print
 pipelines:
   pipeline_test:
     - videotestsrc num-buffers=100
@@ -14,7 +13,7 @@ pipelines:
     - avfvideosrc capture-screen=true 
     - videoscale 
     - videoconvert 
-    - capsfilter caps="ideo/x-raw,width=640,height=480"
+    - capsfilter caps="video/x-raw,width=640,height=480"
     - osxvideosink
 
   rtmp_test:
