@@ -18,11 +18,11 @@ pipelines:
     - alsasrc device=hw:3,0 
     - audioconvert 
     - wavescope 
-    - queue name=q1 
+    - queue 
     - videoconvert 
     - x264enc 
     - flvmux streamable=true 
-    - queue  name=q2
+    - queue
     - rtmpsink location="rtmp://localhost:1935/live/wavetest"
   play_pcm:
     - filesrc location=material/16k16bit.pcm
@@ -37,10 +37,10 @@ pipelines:
     - audioresample
     - capsfilter caps="audio/x-raw,format=S16LE,channels=1,rate=16000,layout=interleaved"
     - tee
-    - queue name=record_queue
+    - queue
     - splitmuxsink location=test_%5d.wav muxer=wavenc
     - tee
-    - queue name=visual_queue
+    - queue
     - wavescope
     - videoconvert
     - autovideosink

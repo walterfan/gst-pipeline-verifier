@@ -23,7 +23,7 @@ pipelines:
     - v4l2src device=/dev/video0
     - capsfilter caps="video/x-raw,width=1920, height=1080, framerate=60/1"
     - nvvideoconvert
-    - capsfilter caps="video/x-raw(memory:NVMM),width=1920,height=1080, framerate=60/1" name=caps2  
+    - capsfilter caps="video/x-raw(memory:NVMM),width=1920,height=1080, framerate=60/1"
     - videorate max-rate=30
     - nvv4l2h264enc maxperf-enable=1 control-rate=1 capture-io-mode=2 output-io-mode=5
     - h264parse
@@ -32,13 +32,13 @@ pipelines:
 
   video_rate_test2:
     - v4l2src device=/dev/video0
-    - capsfilter caps="video/x-raw,width=1920,height=1080, framerate=60/1" name=caps1
+    - capsfilter caps="video/x-raw,width=1920,height=1080, framerate=60/1"
     - nvvideoconvert  
-    - capsfilter caps="video/x-raw(memory:NVMM),width=1920,height=1080, framerate=60/1" name=caps2
+    - capsfilter caps="video/x-raw(memory:NVMM),width=1920,height=1080, framerate=60/1"
     - tee
     - queue
     - videorate max-rate=30
-    - capsfilter caps="video/x-raw(memory:NVMM),width=1920,height=1080, framerate=30/1" name=caps3
+    - capsfilter caps="video/x-raw(memory:NVMM),width=1920,height=1080, framerate=30/1"
     - nvv4l2h264enc maxperf-enable=1 control-rate=1 capture-io-mode=2 output-io-mode=5 insert-sps-pps=1 bitrate=2000000
     - h264parse
     - flvmux streamable=true
@@ -46,14 +46,14 @@ pipelines:
 
   video_rate_test3:
     - v4l2src device=/dev/video0
-    - capsfilter caps="video/x-raw,width=1920,height=1080, framerate=60/1" name=caps1
+    - capsfilter caps="video/x-raw,width=1920,height=1080, framerate=60/1"
     - nvvideoconvert
       # need set w,h,fps besides format 
-    - capsfilter caps="video/x-raw(memory:NVMM),format=NV12,width=1920,height=1080, framerate=60/1" name=caps2
+    - capsfilter caps="video/x-raw(memory:NVMM),format=NV12,width=1920,height=1080, framerate=60/1"
     - queue
     - videorate max-rate=30
-    - nvvideoconvert name=conv2
-    - capsfilter caps="video/x-raw(memory:NVMM),width=1920,height=1080, framerate=30/1" name=caps3
+    - nvvideoconvert
+    - capsfilter caps="video/x-raw(memory:NVMM),width=1920,height=1080, framerate=30/1"
     - nvv4l2h264enc maxperf-enable=1 control-rate=1 capture-io-mode=2 output-io-mode=5 insert-sps-pps=1 bitrate=2000000
     - h264parse
     - flvmux streamable=true
@@ -61,12 +61,12 @@ pipelines:
 
   video_display:
     - v4l2src device=/dev/video0
-    - capsfilter caps="video/x-raw,width=1920,height=1080, framerate=60/1" name=caps1
+    - capsfilter caps="video/x-raw,width=1920,height=1080, framerate=60/1"
     - nvvideoconvert
       # need set w,h,fps besides format 
-    - capsfilter caps="video/x-raw(memory:NVMM),format=NV12,width=1920,height=1080, framerate=60/1" name=caps2
+    - capsfilter caps="video/x-raw(memory:NVMM),format=NV12,width=1920,height=1080, framerate=60/1"
     - queue
     - videorate max-rate=30
-    - nvvideoconvert name=conv2
-    - capsfilter caps="video/x-raw(memory:NVMM),width=1920,height=1080, framerate=30/1" name=caps3
+    - nvvideoconvert
+    - capsfilter caps="video/x-raw(memory:NVMM),width=1920,height=1080, framerate=30/1"
     - nvoverlaysink sync=0

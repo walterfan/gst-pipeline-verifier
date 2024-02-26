@@ -43,8 +43,3 @@ pipelines:
     - x264enc speed-preset=5 tune=4
     - flvmux streamable=true 
     - rtmpsink location=rtmp://localhost:1935/live/waltertest
-
-
-logger:
-  log_level: 3
-  log_console: 0

@@ -44,6 +44,7 @@ int PipelineBuilder::init(int argc, char *argv[], const cmd_args_t& args) {
     m_loop = g_main_loop_new(NULL, FALSE);
 
     m_pipelie_config = std::make_shared<PipelineConfig>(it->first, it->second);
+    m_pipelie_config->check_elements_name();
     DLOG("Init success for pipeline {}",  m_pipeline_name);
     return 0;
 }

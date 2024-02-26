@@ -83,11 +83,6 @@ PipelineConfig::PipelineConfig(std::string name, std::vector<std::string> elemen
     }
 }
 
-void PipelineConfig::insert_desc(const std::string& desc) {
-    m_elements_desc.push_back(desc);
-    m_elements_config.push_back(std::make_shared<ElementConfig>(desc));
-}
-
 std::shared_ptr<ElementConfig> PipelineConfig::get_element_config(const std::string& name) {
     for(auto& ele_cfg_ptr: m_elements_config) {
         if (ele_cfg_ptr->m_name == name) {
@@ -96,4 +91,26 @@ std::shared_ptr<ElementConfig> PipelineConfig::get_element_config(const std::str
     }
     return nullptr;
 }
+
+int PipelineConfig::check_elements_name() {
+    size_t count = m_elements_config.size();
+    
+    size_t i = 0, j = 0;
+
+    for(; i < count - 1; ++i) {
+        auto& ele_cfg_ptr = m_elements_config[i];
+        auto& element_name = ele_cfg_ptr->m_name;
+        size_t index = 0;
+        for (j = i + 1; j < count; ++j) {
+            auto& next_ptr = m_elements_config[j];
+            auto& next_name = next_ptr->m_name;
+            if (next_name == element_name) {
+                next_name = element_name + std::to_string(++index);
+                DLOG("{} rename to {}", element_name, next_name);
+            }            
+        }
+    }
+    return 0;
+}
+
 } //namespace wfan
