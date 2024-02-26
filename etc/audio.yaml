@@ -9,6 +9,11 @@ pipelines:
     - audioresample 
     - capsfilter caps="audio/x-raw,format=S16LE,channels=1,rate=16000" 
     - autoaudiosink
+  wav_scope_test:
+    - audiotestsrc 
+    - audioconvert 
+    - wavescope 
+    - glimagesink
   wav_scope_to_rtmp:
     - alsasrc device=hw:3,0 
     - audioconvert 

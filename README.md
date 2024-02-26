@@ -16,9 +16,25 @@ Verifier of GStreamer Pipeline
 
 * -v : print current version
 
+## Example
 
+```sh
 
-refer to [GStreamer cookbook](https://github.com/walterfan/gstreamer-cookbook)
+# list all pre-defined pipeline
+./bin/gst-pipeline-verify -l
+
+# execute specified pipeline
+./bin/gst-pipeline-verify -p pipeline_test
+
+# play a mp4 file by pipeline mp4_play
+./bin/gst-pipeline-verify -p mp4_play
+
+# check the mp4 playback pipeline as gst-launch format
+./bin/gst-pipeline-verify -p mp4_play
+
+# run pipeline 'wav_scope_test' within aonther config file
+./bin/gst-pipeline-verify -f ./etc/audio.yaml -p wav_scope_test
+```
 
 
 ## Environment
