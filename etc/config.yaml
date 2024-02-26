@@ -2,7 +2,8 @@ general:
   default_pipeline: pipeline_test
   log_folder: ./log
   log_name: pipeline_verify
-  log_level: 2 # 0:trace, 1: debug, 2: info
+  log_level: 1 # 0:trace, 1: debug, 2: info ...
+
 pipelines:
   pipeline_test:
     - videotestsrc num-buffers=100
@@ -23,14 +24,25 @@ pipelines:
     - capsfilter caps="video/x-raw,width=640,height=480"
     - osxvideosink
 
-  rtmp_test:
-    - videotestsrc 
-    - clockoverlay 
-    - queue 
+  rtmp_test:    
+    - filesrc location=material/talk.mp4
+    - decodebin
     - videoconvert 
-    - x264enc speed-preset=5 tune=4
-    - flvmux streamable=true 
-    - rtmpsink location=rtmp://localhost:1935/live/waltertest
+    - identity drop-allocation=1
+    - openh264enc bitrate=4000000
+    - videoconvert
+    - flvmux streamable=true
+    - rtmpsink location='rtmp://192.168.104.199:1935/live/talktest'
+
+  mp4_play:
+    - filesrc location=./material/talk.mp4 
+    - decodebin name=dec 
+    - videoconvert 
+    - clockoverlay 
+    - autovideosink dec. 
+    - audioconvert 
+    - audioresample 
+    - autoaudiosink
 
   video2rtmp:
     - v4l2src device=/dev/video0
@@ -52,5 +64,3 @@ pipelines:
     - flvmux streamable=true 
     - queue  name=q2
     - rtmpsink location="rtmp://localhost:1935/live/audio_test"
-
-

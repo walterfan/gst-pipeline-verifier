@@ -19,6 +19,7 @@ struct ElementConfig {
     void insert_prop(const std::string& key, const std::string& value);
     std::string m_name;
     std::string m_factory;
+    std::string m_fork_tag;
     std::map<std::string, std::string> m_props;
 };
 

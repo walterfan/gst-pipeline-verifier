@@ -112,7 +112,7 @@ bool is_number(const std::string& s)
     return !s.empty() && it == s.end();
 }
 
-std::string trim(const std::string& str, const std::string& whitespace )
+std::string trim(const std::string& str, const std::string& whitespace)
 {
     std::string::size_type strBegin = str.find_first_not_of(whitespace);
     if (strBegin == std::string::npos)
@@ -122,6 +122,28 @@ std::string trim(const std::string& str, const std::string& whitespace )
     std::string::size_type strRange = strEnd - strBegin + 1;
 
     return str.substr(strBegin, strRange);
+}
+
+std::string ltrim(const std::string& str, const std::string& whitespace)
+{
+    std::string::size_type strBegin = str.find_first_not_of(whitespace);
+    if (strBegin == std::string::npos)
+        return ""; // no content
+
+
+    std::string::size_type strRange = str.size() - strBegin + 1;
+    return str.substr(strBegin, strRange);
+}
+
+std::string rtrim(const std::string& str, const std::string& whitespace)
+{
+    std::string::size_type strEnd = str.find_last_not_of(whitespace);
+    if (strEnd == std::string::npos)
+        return ""; // no content
+
+    std::string::size_type strRange = strEnd + 1;
+
+    return str.substr(0, strRange);
 }
 
 int tokenize(const std::string& input, std::vector<std::string>& tokens) {

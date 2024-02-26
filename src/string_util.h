@@ -39,7 +39,11 @@ std::string trim_prefix_suffix(std::string& filename,
     const std::string& prefix, 
     const std::string& suffix);
 
-std::string trim(const std::string& str, const std::string& whitespace );
+std::string trim(const std::string& str, const std::string& whitespace = " \t" );
+
+std::string ltrim(const std::string& str, const std::string& whitespace = " \t");
+
+std::string rtrim(const std::string& str, const std::string& whitespace = " \t");
 
 inline std::string &trim_space(std::string &str)
 {

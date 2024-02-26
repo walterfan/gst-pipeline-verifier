@@ -8,6 +8,7 @@
 using namespace std;
 
 constexpr auto KEY_DEFAULT_PIPELINE = "default_pipeline";
+constexpr auto DECODE_BIN = "decodebin";
 
 namespace wfan {
 
@@ -234,31 +235,42 @@ bool PipelineBuilder::link_elements() {
     auto it = elements_configs.begin();
     int failed_count = 0;
     while( it != elements_configs.end() && failed_count == 0) {
-        GstElement* e1 = get_element((*it)->m_name);
-        //for decodebin, cannot link directly
-        if ((*it)->m_factory == "decodebin") {
-            g_signal_connect(e1, "pad-added", G_CALLBACK(on_pad_added), this);
+        auto& leftEleCfg = *it;
+        GstElement* e1 = get_element(leftEleCfg->m_name);
+        //for fork tag, use fork tag's element to link to right element instead of this element
+        if (!(leftEleCfg->m_fork_tag.empty())) {
+            DLOG("should fork another branch from {} to {}", leftEleCfg->m_name, leftEleCfg->m_fork_tag);
+            e1 = get_element(leftEleCfg->m_fork_tag);
+            leftEleCfg = m_pipelie_config->get_element_config(leftEleCfg->m_fork_tag); 
         }
-
+        
         ++it;
         if (it == elements_configs.end()) {
             break;
         }
-        
-        GstElement* e2 = get_element((*it)->m_name);
-        if (e1 != nullptr && e2 != nullptr) {      
-            gchar* e1n = gst_element_get_name(e1);
-            gchar* e2n = gst_element_get_name(e2);
-            auto link_ret = gst_element_link(e1, e2);
-            if(link_ret) {                                 
-                DLOG("link succed for {} and {}", e1n, e2n);
+        auto& rightEleCfg = *it;
+        GstElement* e2 = get_element(rightEleCfg->m_name);
+
+        if (e1 != nullptr && e2 != nullptr) { 
+            //for decodebin, cannot link directly
+            if (leftEleCfg->m_factory == DECODE_BIN) {
+                g_signal_connect(e1, "pad-added", G_CALLBACK(on_pad_added), e2);
+                DLOG("decodebin cannot link directly from element {} to {}", 
+                    leftEleCfg->m_name, rightEleCfg->m_name);
             } else {
-                DLOG("link failed for {} and {}", e1n, e2n);
-                failed_count ++;
-            }
-            g_free(e1n);        
-            g_free(e2n);                                         
-        }
+                gchar* e1n = gst_element_get_name(e1);
+                gchar* e2n = gst_element_get_name(e2);
+                auto link_ret = gst_element_link(e1, e2);
+                if(link_ret) {
+                    DLOG("link succed for {} and {}", e1n, e2n);
+                } else {
+                    ELOG("link failed for {} and {}", e1n, e2n);
+                    failed_count ++;
+                }
+                g_free(e1n);        
+                g_free(e2n);  
+            }                  
+        }     
     }
     
     return failed_count == 0? true:false;
@@ -325,7 +337,18 @@ gboolean PipelineBuilder::on_bus_msg(GstBus* bus, GstMessage* msg, gpointer data
 
 
 void PipelineBuilder::on_pad_added(GstElement* element, GstPad* pad, gpointer data) {
-    DLOG("on_pad_added:");
+    gchar* pad_name = gst_pad_get_name (pad);
+    gchar* left_ele_name = gst_element_get_name(element);
+    GstElement* other = (GstElement*)data;
+    gchar* right_ele_name = gst_element_get_name(other);
+
+    auto ret = gst_element_link(element, other);
+    DLOG("A new pad {} was created for {} link to {}, ret={}", 
+        pad_name, left_ele_name, right_ele_name, ret);
+
+    g_free(pad_name);
+    g_free(left_ele_name);
+    g_free(right_ele_name);
 }
 
 void PipelineBuilder::on_bus_msg_eos() {

@@ -40,12 +40,17 @@ void ElementConfig::parse_prop(const std::string& token) {
         insert_prop(trim_copy(token.substr(0, pos)), trim_copy(token.substr(pos+1)));
     } else {
         if (m_factory.empty()) {
-            m_factory = token;
+            set_factory(token);
+        } else {
+            //stop and start another branch
+            if (token.find(".") != string::npos) {
+                m_fork_tag = trim(token, " \t.");
+                DLOG("fork tag: {}", m_fork_tag);
+            } else {
+                WLOG("unknown token: {}", token);
+            }
         }
 
-        if (m_name.empty()) {
-            m_name = token;
-        }
     }
 }
 
