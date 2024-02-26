@@ -31,7 +31,10 @@ int yaml_to_str_vec_map(const std::string& path,
 std::map<std::string, std::string> read_section(const std::string& file_path, 
     const std::string& section_path) {
     YAML::Node config = YAML::LoadFile(file_path);
-    return config[section_path].as<std::map<std::string, std::string>>();
+    if (config[section_path]) {
+        return config[section_path].as<std::map<std::string, std::string>>();
+    }
+    return std::map<std::string, std::string>();
 }
 
 } //namespace wfan

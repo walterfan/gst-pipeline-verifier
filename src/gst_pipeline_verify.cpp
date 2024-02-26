@@ -32,20 +32,44 @@ constexpr auto KEY_LOG_FOLDER = "log_folder";
 constexpr auto KEY_LOG_NAME   = "log_name";
 constexpr auto KEY_LOG_LEVEL  = "log_level";
 
+
+struct LogConfig {
+    int log_level;
+    std::string log_folder;
+    std::string log_name;
+    int load_config(const std::string& config_file);
+};
+// read config file
+int LogConfig::load_config(const std::string& config_file) {
+    auto general_config = read_section(std::string(config_file), KEY_GENERAL);
+    if (general_config.empty()) {
+        log_level = 2;
+        log_folder = "./log";
+        log_name = "pipeline_verify";
+        return 1;
+    }
+
+    log_level = std::stoi(general_config[KEY_LOG_LEVEL]);
+    log_folder = general_config[KEY_LOG_FOLDER];
+    log_name   = general_config[KEY_LOG_NAME];
+    return 0;
+}
+
+
 int verify_pipeline(int argc, char *argv[], void* param=nullptr) {
-    // read config file
+    
     const std::vector<std::string_view> args(argv, argv + argc);
     auto config_file = get_option(args, "-f");
     if (config_file.empty()) {
         std::cerr << "Use default configuration " << CONFIG_FILE << std::endl;
         config_file = CONFIG_FILE;
     }
-    auto general_config = read_section(std::string(config_file), KEY_GENERAL);
+    LogConfig logConfig;
+    logConfig.load_config(std::string(config_file));
     //init logger
     auto& logger = Logger::get_instance();
-    logger.init(general_config[KEY_LOG_FOLDER], general_config[KEY_LOG_NAME], 20, 20);
-    auto log_level = std::stoi(general_config[KEY_LOG_LEVEL]);
-    logger.reset_level(log_level, SPDLOG_LEVEL_ERROR, SPDLOG_FLUSH_SEC);
+    logger.init(logConfig.log_folder, logConfig.log_name, 20, 20);
+    logger.reset_level(logConfig.log_level, SPDLOG_LEVEL_ERROR, SPDLOG_FLUSH_SEC);
     
     //handle arguments
     if (has_option(args, "-v")) {

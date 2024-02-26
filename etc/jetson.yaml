@@ -9,7 +9,6 @@ pipelines:
     - mp4mux
     - filesink location=test.mp4
 
-
   camera_to_rtmp:
     - v4l2src device=/dev/video0
     - capsfilter caps="video/x-raw,width=1920, height=1080, framerate=60/1"
@@ -59,3 +58,15 @@ pipelines:
     - h264parse
     - flvmux streamable=true
     - rtmpsink location=rtmp://localhost:1935/live/waltertest      
+
+  video_display:
+    - v4l2src device=/dev/video0
+    - capsfilter caps="video/x-raw,width=1920,height=1080, framerate=60/1" name=caps1
+    - nvvideoconvert
+      # need set w,h,fps besides format 
+    - capsfilter caps="video/x-raw(memory:NVMM),format=NV12,width=1920,height=1080, framerate=60/1" name=caps2
+    - queue
+    - videorate max-rate=30
+    - nvvideoconvert name=conv2
+    - capsfilter caps="video/x-raw(memory:NVMM),width=1920,height=1080, framerate=30/1" name=caps3
+    - nvoverlaysink sync=0

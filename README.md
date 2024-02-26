@@ -2,6 +2,22 @@
 
 Verifier of GStreamer Pipeline 
 
+## Usage
+
+```sh
+./bin/gst-pipeline-verifier -p <pipeline_name> [-f <config_file>] [-v] [-l]
+```
+* -p <pipeline_name> : specify pipeline name that want to verify
+                       the detailed pipeline configuration refers to config_file
+
+* -f <config_file> : specify configuration file, it is ./etc/config.yaml by default
+
+* -l : list the pipelines in configuration file
+
+* -v : print current version
+
+
+
 refer to [GStreamer cookbook](https://github.com/walterfan/gstreamer-cookbook)
 
 
