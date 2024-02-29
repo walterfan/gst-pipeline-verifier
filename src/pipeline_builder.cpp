@@ -2,20 +2,44 @@
 #include "file_util.h"
 #include "string_util.h"
 #include "pipeline_builder.h"
-#include <regex>
 #include "logger.h"
+#include <vector>
 
 using namespace std;
 
 constexpr auto KEY_DEFAULT_PIPELINE = "default_pipeline";
 constexpr auto DECODE_BIN = "decodebin";
+constexpr auto DEMUX = "demux";
+constexpr auto KEY_PIPELINES = "pipelines";
+constexpr auto KEY_GENERAL = "general";
 
 namespace wfan {
 
-PipelineBuilder::PipelineBuilder(const std::string& config_file)
-: m_config_file(config_file) {
-    yaml_to_str_vec_map(m_config_file, "pipelines", m_pipeline_config);
-    m_general_config = read_section(m_config_file, "general");
+PipelineBuilder::PipelineBuilder()
+{
+    
+}
+
+int PipelineBuilder::read_config_file(const char* szFile) {
+    m_config_file = szFile;
+    yaml_to_str_vec_map(m_config_file, KEY_PIPELINES, m_pipeline_config);
+    m_general_config = read_yaml_section(m_config_file, KEY_GENERAL);
+}
+
+int PipelineBuilder::read_all_config_files(const char* szFolder) {
+    std::vector<std::string> config_files;
+    int cnt = retrieve_files(szFolder, config_files);
+    if (cnt <=0 ) {
+        WLOG("No config files under {}", szFolder);
+        return -1;
+    }
+    for(auto& file: config_files) {        
+        std::string config_file(szFolder);        
+        config_file = config_file + "/" + file;
+        DLOG("read {}", config_file);
+        yaml_to_str_vec_map(config_file, KEY_PIPELINES, m_pipeline_config);
+    }
+    return cnt;
 }
 
 int PipelineBuilder::init(int argc, char *argv[], const cmd_args_t& args) {
@@ -24,6 +48,10 @@ int PipelineBuilder::init(int argc, char *argv[], const cmd_args_t& args) {
     if (m_pipeline_config.empty()) {
         ELOG("PipelineBuilder init not read pipeline yaml: {} ", m_config_file);
         return -1;
+    }
+
+    if (has_option(args, "-a")) {
+        read_all_config_files("./etc");
     }
 
     m_pipeline_name = get_option(args, "-p");
@@ -51,13 +79,14 @@ int PipelineBuilder::init(int argc, char *argv[], const cmd_args_t& args) {
 
 void PipelineBuilder::list_pipelines(const std::string& pipeline_name) {
     auto it = m_pipeline_config.begin();
+    int i = 0;
     for (;it != m_pipeline_config.end(); ++it) {
         if (!pipeline_name.empty()) {
             if (pipeline_name != it->first) {
                 continue;
             }
         }
-        cout << it->first << ": " << endl;
+        cout << (++i) << ". " << it->first << ": " << endl;
         auto& vec = it->second;
         auto cnt = vec.size();
         for(int i = 0; i < cnt; ++i) {
@@ -222,10 +251,10 @@ bool PipelineBuilder::del_element(const std::string& name) {
             //e = nullptr;
             return true;
         } else {                                           
-            DLOG("remove failed for element {}",  name);           
+            ELOG("remove failed for element {}",  name);           
         }                                                  
     } else {                                               
-        DLOG("remove elem failed for set state null: {}",  name);  
+        ELOG("remove elem failed for set state null: {}",  name);  
     }                                                      
 
     return false;
@@ -253,24 +282,41 @@ bool PipelineBuilder::link_elements() {
         GstElement* e2 = get_element(rightEleCfg->m_name);
 
         if (e1 != nullptr && e2 != nullptr) { 
-            //for decodebin, cannot link directly
-            if (leftEleCfg->m_factory == DECODE_BIN) {
-                g_signal_connect(e1, "pad-added", G_CALLBACK(on_pad_added), e2);
-                DLOG("decodebin cannot link directly from element {} to {}", 
+            //print_pad_templates_info(leftEleCfg->m_factory.c_str());
+            GstPadPresence padPresenceType = get_one_pad_presence(leftEleCfg->m_factory.c_str(), GST_PAD_SRC);
+            if (padPresenceType == GST_PAD_SOMETIMES) {
+                g_signal_connect(e1, "pad-added", G_CALLBACK(on_src_pad_added), e2);
+                DLOG("sometime pad does not link directly for element {} and {}", 
                     leftEleCfg->m_name, rightEleCfg->m_name);
-            } else {
+                continue;
+            }
+            // for request pad case, static_pad -> request_pad
+            if (!(rightEleCfg->m_link_tag.empty())) {                
+                GstPad* src_pad = gst_element_get_static_pad(e1,  SRC_PAD_NAME);
+                if (!src_pad) {
+                    src_pad = gst_element_get_static_pad(e1,  SRC_PAD_NAME_U);
+                }
+                auto right_pad_name = get_pad_name_from_link_tag(rightEleCfg->m_link_tag);
+                GstPad* sink_pad = gst_element_get_request_pad(e2, right_pad_name.c_str());
+                LINK_GST_PADS(src_pad, sink_pad);
+                m_linked_pads.push_back({src_pad, sink_pad});
+                continue;
+            }
+
+            {
                 gchar* e1n = gst_element_get_name(e1);
                 gchar* e2n = gst_element_get_name(e2);
                 auto link_ret = gst_element_link(e1, e2);
                 if(link_ret) {
                     DLOG("link succed for {} and {}", e1n, e2n);
+                    m_linked_elements.push_back({e1, e2});
                 } else {
                     ELOG("link failed for {} and {}", e1n, e2n);
                     failed_count ++;
                 }
                 g_free(e1n);        
                 g_free(e2n);  
-            }                  
+            }
         }     
     }
     
@@ -279,29 +325,32 @@ bool PipelineBuilder::link_elements() {
 }
 
 bool PipelineBuilder::unlink_elements() {
-    auto& pipe_configs = m_pipelie_config->m_elements_config;
-    auto it = pipe_configs.begin();
-    
-    while( it != pipe_configs.end()) {
-        GstElement* e1 = get_element((*it)->m_name);
-        ++it;
-        if (it == pipe_configs.end()) {
-            break;
-        }
-        GstElement* e2 = get_element((*it)->m_name);
+    bool ret = true;
+    for(auto it = m_linked_pads.begin(); it != m_linked_pads.end(); ++it) {
+        GstPad* p1 = it->first;
+        GstPad* p2 = it->second;
+        ret = gst_pad_unlink(p1, p2);
+        gchar* p1n = gst_pad_get_name(p1);
+        gchar* p2n = gst_pad_get_name(p2);
+        DLOG("unlink result={} for {} and {}", ret, p1n, p2n);
+        g_free(p1n);                            
+        g_free(p2n);      
+    }
+
+    for(auto it = m_linked_elements.begin(); it != m_linked_elements.end(); ++it) {
+        GstElement* e1 = it->first;
+        GstElement* e2 = it->second;
         if (e1 != nullptr && e2 != nullptr) {      
-                gst_element_unlink(e1, e2);
-                                     
-                gchar* e1n = gst_element_get_name((e1));
-                gchar* e2n = gst_element_get_name((e2));
-                DLOG("unlink successfully for {} and {}", e1n, e2n);
-                g_free(e1n);                            
-                g_free(e2n); 
-                                                    
+            gst_element_unlink(e1, e2);                                     
+            gchar* e1n = gst_element_get_name(e1);
+            gchar* e2n = gst_element_get_name(e2);
+            DLOG("unlink result={} for {} and {}", ret, e1n, e2n);
+            g_free(e1n);                            
+            g_free(e2n);                                                     
         }
     }
 
-    return false;
+    return ret;
 }
 
 
@@ -330,6 +379,15 @@ gboolean PipelineBuilder::on_bus_msg(GstBus* bus, GstMessage* msg, gpointer data
         case GST_MESSAGE_STREAM_START:
             builder->on_stream_started(msg);
             break;
+        case GST_MESSAGE_STREAM_STATUS:
+            builder->on_stream_status(msg);
+            break;
+        case GST_MESSAGE_QOS:
+            builder->on_bus_msg_qos(msg);
+            break;
+        case GST_MESSAGE_BUFFERING:
+            builder->on_bus_msg_buffering_stats(msg);
+            break;
         default:
             break;
     }
@@ -337,17 +395,17 @@ gboolean PipelineBuilder::on_bus_msg(GstBus* bus, GstMessage* msg, gpointer data
 }
 
 
-void PipelineBuilder::on_pad_added(GstElement* element, GstPad* pad, gpointer data) {
-    gchar* pad_name = gst_pad_get_name (pad);
+void PipelineBuilder::on_src_pad_added(GstElement* element, GstPad* pad, gpointer data) {
+    gchar* src_pad_name = gst_pad_get_name (pad);
     gchar* left_ele_name = gst_element_get_name(element);
     GstElement* other = (GstElement*)data;
     gchar* right_ele_name = gst_element_get_name(other);
-
+    //TODO: refactoring to link to 
     auto ret = gst_element_link(element, other);
-    DLOG("A new pad {} was created for {} link to {}, ret={}", 
-        pad_name, left_ele_name, right_ele_name, ret);
+    DLOG("A new src pad {} was created for {} link to {}, ret={}", 
+        src_pad_name, left_ele_name, right_ele_name, ret);
 
-    g_free(pad_name);
+    g_free(src_pad_name);
     g_free(left_ele_name);
     g_free(right_ele_name);
 }
@@ -374,7 +432,7 @@ void PipelineBuilder::on_bus_msg_error(GstMessage* msg) {
 }
 
 void PipelineBuilder::on_bus_msg_warning(GstMessage* msg) {
-    DLOG("on_bus_msg_warning:");
+    DLOG("on_bus_msg_warning: {}", GST_OBJECT_NAME(msg->src));
 }
 
 void PipelineBuilder::on_state_changed(GstMessage* msg) {
@@ -382,15 +440,93 @@ void PipelineBuilder::on_state_changed(GstMessage* msg) {
     GstState old_state, new_state, pending_state;
     gst_message_parse_state_changed (msg, &old_state, &new_state, &pending_state);
 
-    DLOG("--> state changed from {} to {} for {}" 
+    DLOG("state changed from {} to {} for {}"
                , gst_element_state_get_name (old_state)
                , gst_element_state_get_name(new_state)
                , GST_OBJECT_NAME(msg->src));
- 
+
 }
 
 void PipelineBuilder::on_stream_started(GstMessage* msg) {
-    DLOG("on_stream_started:");
+    DLOG("[stats] on_stream_started of {}", GST_OBJECT_NAME(msg->src));
+}
+/*
+GST_STREAM_STATUS_TYPE_CREATE (0) – A new thread need to be created.
+GST_STREAM_STATUS_TYPE_ENTER (1) – a thread entered its loop function
+GST_STREAM_STATUS_TYPE_LEAVE (2) – a thread left its loop function
+GST_STREAM_STATUS_TYPE_DESTROY (3) – a thread is destroyed
+GST_STREAM_STATUS_TYPE_START (8) – a thread is started
+GST_STREAM_STATUS_TYPE_PAUSE (9) – a thread is paused
+GST_STREAM_STATUS_TYPE_STOP (10) – a thread is stopped
+
+gst_message_parse_stream_status (GstMessage * message,
+                                 GstStreamStatusType * type,
+                                 GstElement ** owner)
+*/
+void PipelineBuilder::on_stream_status(GstMessage* msg) {
+    GstStreamStatusType statusType;
+    GstElement* owner;
+    gst_message_parse_stream_status (msg, &statusType, &owner);
+    DLOG("[stats] on_stream_status: {} of {}", (int)statusType, GST_OBJECT_NAME(owner));
 }
 
+/*
+gst_message_parse_qos_stats (GstMessage * message,
+                             GstFormat * format,
+                             guint64 * processed,
+                             guint64 * dropped)
+
+gst_message_parse_qos_values (GstMessage * message,
+                              gint64 * jitter,
+                              gdouble * proportion,
+                              gint * quality)
+*/
+void PipelineBuilder::on_bus_msg_qos(GstMessage* msg) {
+    gboolean live = false;
+    guint64  running_time = 0;
+    guint64  stream_time = 0;
+    guint64  timestamp = 0;
+    guint64  duration = 0;
+    gst_message_parse_qos (msg, &live, &running_time, &stream_time, &timestamp, &duration);
+    DLOG("[stats] element {}' qos: live={}, running_time={}, stream_time={}, timestamp={}, duration={}",
+         GST_OBJECT_NAME(msg->src), live, running_time, stream_time, timestamp, duration);
+
+    //gst_message_parse_qos_stats
+    GstFormat format;
+    guint64 processed = 0;
+    guint64 dropped = 0;
+    gst_message_parse_qos_stats (msg, &format,&processed,&dropped);
+    DLOG("[stats] element {}' qos stats: format={}, oricessed={}, dropped={}",
+         GST_OBJECT_NAME(msg->src), (int)format, processed, dropped);
+
+    //gst_message_parse_qos_values
+    gint64 jitter = 0;
+    gdouble proportion = 0;
+    gint quality = 0;
+
+    gst_message_parse_qos_values (msg, &jitter, &proportion, &quality);
+    DLOG("[stats] element {}' qos values: jitter={}, proportion={}, quality={}",
+         GST_OBJECT_NAME(msg->src), jitter, proportion, quality);
+}
+
+//GST_MESSAGE_APPLICATION
+
+/*
+gst_message_parse_buffering_stats (GstMessage * message,
+                                   GstBufferingMode * mode,
+                                   gint * avg_in,
+                                   gint * avg_out,
+                                   gint64 * buffering_left)
+*/
+void PipelineBuilder::on_bus_msg_buffering_stats(GstMessage* msg) {
+    GstBufferingMode mode;
+    gint avg_in = 0;
+    gint avg_out = 0;
+    gint64 buffering_left = 0;
+
+    gst_message_parse_buffering_stats (msg, &mode, &avg_in,
+                                   &avg_out,  &buffering_left);
+    DLOG("[stats] element {}' buffering stats: mode={}, avg_in={}, avg_out={}, buffering_left={}",
+         GST_OBJECT_NAME(msg->src), (int)mode, avg_in, avg_out, buffering_left);
+}
 } //namespace wfan

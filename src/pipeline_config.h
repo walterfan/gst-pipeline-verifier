@@ -21,6 +21,7 @@ struct ElementConfig {
     std::string m_name;
     std::string m_factory;
     std::string m_fork_tag;
+    std::string m_link_tag;
     std::map<std::string, std::string> m_props;
 };
 

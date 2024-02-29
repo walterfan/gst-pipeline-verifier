@@ -6,6 +6,8 @@
 
 using namespace std;
 
+static const std::string DOT = ".";
+
 namespace wfan {
 
 ElementConfig::ElementConfig(const std::string& desc) {
@@ -13,6 +15,14 @@ ElementConfig::ElementConfig(const std::string& desc) {
 }
 
 void ElementConfig::set_factory(const std::string& factory) {
+    if ((startswith(factory, "\"") && endswith(factory, "\"")) 
+        || (startswith(factory, "\'") && endswith(factory, "\'"))) {
+        
+        insert_prop("caps", factory);
+        m_factory = "capsfilter";
+        m_name = m_name.empty()? m_factory: m_name; 
+        return;
+    }
     m_factory = factory;
     trim_space(m_factory);
     if (m_name.empty()) {
@@ -22,6 +32,9 @@ void ElementConfig::set_factory(const std::string& factory) {
 
 
 void ElementConfig::insert_prop(const std::string& key, const std::string& value) {
+    if (key.empty() || value.empty()) {
+        return;
+    }
     if (key == "name") {
         m_name = value;
         return;
@@ -39,13 +52,16 @@ void ElementConfig::parse_prop(const std::string& token) {
     if ((pos = token.find("=")) != string::npos) {
         insert_prop(trim_copy(token.substr(0, pos)), trim_copy(token.substr(pos+1)));
     } else {
-        if (m_factory.empty()) {
-            set_factory(token);
+        if (m_factory.empty() && token.find(DOT) == std::string::npos) {
+            set_factory(trim(token, " \t"));
         } else {
             //stop and start another branch
-            if (token.find(".") != string::npos) {
+            if (endswith(token, DOT)) {
                 m_fork_tag = trim(token, " \t.");
                 DLOG("fork tag: {}", m_fork_tag);
+            } else if(token.find(DOT) != std::string::npos) {
+                m_link_tag = trim(token, " \t");
+                DLOG("link tag: {}", m_link_tag);
             } else {
                 WLOG("unknown token: {}", token);
             }
@@ -59,15 +75,17 @@ void ElementConfig::parse_desc(const std::string& desc) {
     std::vector<std::string> tokens;
     int count = tokenize(desc, tokens);
 
-    if (count > 0) {
-        set_factory(tokens[0]);
-        DLOG("m_factory: {}", m_factory);
-    }
-    if (count == 1) {
+    if (count == 0) {
         return;
     }
 
-    for (int i=1; i < count; ++i) {
+    if (count == 1 && m_factory.empty()) {
+        set_factory(trim(tokens[0], " \t"));
+        DLOG("m_factory: {}", m_factory);
+        return;
+    }
+
+    for (int i = 0; i < count; ++i) {
         auto& token = tokens[i];
         parse_prop(token);
     }

@@ -213,4 +213,28 @@ std::string_view get_option(
     
     return "";
 }
+
+int split(std::string strValue, std::string separator, std::vector<std::string>& strArr) {
+    if(strValue.empty()) return 0;
+
+    std::string::size_type pos0 = 0;
+    std::string::size_type pos1 = strValue.find(separator, pos0);
+    std::string::size_type seplen = separator.size();
+
+    int cnt = 0;
+    while(pos1 != std::string::npos) {
+        strArr.push_back(strValue.substr(pos0, pos1-pos0));
+        cnt++;
+        pos0 = pos1 + seplen;
+        pos1 = strValue.find(separator, pos0);
+    }
+
+    if(pos1 > pos0) {
+        strArr.push_back(strValue.substr(pos0, pos1 - pos0));
+        cnt++;
+    }
+
+    return cnt;
+}
+
 }//namespace wfan

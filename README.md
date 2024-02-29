@@ -20,8 +20,11 @@ Verifier of GStreamer Pipeline
 
 ```sh
 
+# print usage
+./bin/gst-pipeline-verify -h
+
 # list all pre-defined pipeline
-./bin/gst-pipeline-verify -l
+./bin/gst-pipeline-verify -l -a
 
 # execute specified pipeline
 ./bin/gst-pipeline-verify -p pipeline_test

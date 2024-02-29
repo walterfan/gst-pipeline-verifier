@@ -24,48 +24,26 @@ using namespace wfan;
 
 constexpr auto SPDLOG_FLUSH_SEC = 3;
 constexpr auto log_pattern = "[%Y-%m-%d %H:%M:%S.%e] [%n] [%l] [%t] [%s:%#] (%!) %v";
+constexpr auto CONFIG_FOLDER = "./etc";
 constexpr auto CONFIG_FILE = "./etc/config.yaml";
 constexpr auto VERSION = "1.0.0";
-constexpr auto USAGE = "-f [config_file] -p [pipeline_name] [-h -v]";
-constexpr auto KEY_GENERAL = "general";
-constexpr auto KEY_LOG_FOLDER = "log_folder";
-constexpr auto KEY_LOG_NAME   = "log_name";
-constexpr auto KEY_LOG_LEVEL  = "log_level";
-
-
-struct LogConfig {
-    int log_level;
-    std::string log_folder;
-    std::string log_name;
-    int load_config(const std::string& config_file);
-};
-// read config file
-int LogConfig::load_config(const std::string& config_file) {
-    auto general_config = read_section(std::string(config_file), KEY_GENERAL);
-    if (general_config.empty()) {
-        log_level = 2;
-        log_folder = "./log";
-        log_name = "pipeline_verify";
-        return 1;
-    }
-
-    log_level = std::stoi(general_config[KEY_LOG_LEVEL]);
-    log_folder = general_config[KEY_LOG_FOLDER];
-    log_name   = general_config[KEY_LOG_NAME];
-    return 0;
-}
-
+constexpr auto USAGE = "-f <config_file> -p <pipeline_name> -d <debug_level> [-l -h -v -a]";
 
 int verify_pipeline(int argc, char *argv[], void* param=nullptr) {
     
     const std::vector<std::string_view> args(argv, argv + argc);
-    auto config_file = get_option(args, "-f");
+    std::string config_file = std::string(get_option(args, "-f"));
     if (config_file.empty()) {
-        std::cerr << "Use default configuration " << CONFIG_FILE << std::endl;
+        //std::cerr << "Use default configuration " << CONFIG_FILE << std::endl;
         config_file = CONFIG_FILE;
     }
     LogConfig logConfig;
-    logConfig.load_config(std::string(config_file));
+    logConfig.load_config(config_file);
+
+    std::string log_level = std::string(get_option(args, "-d"));
+    if (!log_level.empty()) {
+        logConfig.log_level = std::stoi(log_level);
+    }
     //init logger
     auto& logger = Logger::get_instance();
     logger.init(logConfig.log_folder, logConfig.log_name, 20, 20);
@@ -79,12 +57,24 @@ int verify_pipeline(int argc, char *argv[], void* param=nullptr) {
 
     if (has_option(args, "-h")) {
         std::cout << "Usage: " << argv[0] << " " << USAGE << std::endl;
+        std::cout << "- all arguments are optional" << std::endl;        
+        std::cout << "\t-l : list pipelines" << std::endl;        
+        std::cout << "\t-h : this screen for usage help" << std::endl;
+        std::cout << "\t-a : load all config files under ./etc folder" << std::endl;
+        std::cout << "\t-f <config_file> : specify config file, it is ./etc/config.yaml by default" << std::endl;
+        std::cout << "\t-p <pipeline_name> : specify a pipeline to start" << std::endl;
+        std::cout << "\t-d <log_level> : 0:trace, 1: debug, 2: info ..., default value set by config file" << std::endl;
         return 0;
     }
 
     int ret = 0;
-    auto verifier = std::make_unique<PipelineBuilder>(std::string(config_file));
-    
+    auto verifier = std::make_unique<PipelineBuilder>();
+    verifier->read_config_file(config_file.c_str());
+
+    if (has_option(args, "-a")) {
+        verifier->read_all_config_files(CONFIG_FOLDER);
+    }
+
     if (has_option(args, "-l")) {
         verifier->list_pipelines(std::string(get_option(args, "-p")));
         return 0;

@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <vector>
 #include <dirent.h>
 #include "string_util.h"
 #include "file_util.h"
@@ -28,13 +29,34 @@ int yaml_to_str_vec_map(const std::string& path,
     return 0;
 }
 
-std::map<std::string, std::string> read_section(const std::string& file_path, 
+std::map<std::string, std::string> read_yaml_section(const std::string& file_path, 
     const std::string& section_path) {
     YAML::Node config = YAML::LoadFile(file_path);
     if (config[section_path]) {
         return config[section_path].as<std::map<std::string, std::string>>();
     }
     return std::map<std::string, std::string>();
+}
+
+int retrieve_files(const char* szFolder, std::vector<std::string>& files)
+{
+  struct dirent* direntp;
+  DIR* dirp = opendir(szFolder);
+
+  if(NULL == dirp) {
+    return -1;
+  }
+
+  while( NULL != (direntp = readdir(dirp))) {
+    std::string file = direntp->d_name;
+    if(".." == file || "." == file)
+        continue;
+    files.push_back(file);
+  }
+
+  while((-1 == closedir(dirp)) && (errno == EINTR));
+
+  return files.size();
 }
 
 } //namespace wfan

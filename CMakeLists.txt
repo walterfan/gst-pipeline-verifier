@@ -38,11 +38,15 @@ else()
     message(STATUS "Found spdlog on: " ${spdlog_DIR})
 endif(NOT spdlog_FOUND)
 
-include_directories(${CMAKE_SOURCE_DIR}/util)
+include_directories(${PROJECT_SOURCE_DIR})
+include_directories(${PROJECT_SOURCE_DIR}/util)
+include_directories(${PROJECT_SOURCE_DIR}/src)
 
 set(GST_LIBRARIES -lgstreamer-1.0 -lgobject-2.0 -lglib-2.0)
 set(GST_RTC_LIBS -lgstwebrtc-1.0 -lgstsdp-1.0 -lgstrtp-1.0 -lsoup-2.4 -ljson-glib-1.0)
 
 add_subdirectory(src)
+add_subdirectory(util)
+add_subdirectory(test)
 
 

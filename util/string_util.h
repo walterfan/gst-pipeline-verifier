@@ -67,4 +67,6 @@ std::string_view get_option(
     const std::vector<std::string_view>& args, 
     const std::string_view& option_name) ;
 
+int split(std::string strValue, std::string separator, std::vector<std::string>& strArr);
+
 } //namespace wfan

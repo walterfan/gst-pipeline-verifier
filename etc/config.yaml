@@ -1,5 +1,5 @@
 general:
-  default_pipeline: pipeline_test
+  default_pipeline: mp4_play
   log_folder: ./log
   log_name: pipeline_verify
   log_level: 1 # 0:trace, 1: debug, 2: info ...
@@ -44,7 +44,18 @@ pipelines:
     - audioresample 
     - autoaudiosink
 
-  video2rtmp:
+  videojpg2rtmp:
+    - v4l2src device=/dev/video1
+    - capsfilter caps="image/jpeg,width=1920, height=1080, framerate=30/1"
+    - nvv4l2decoder mjpeg=1
+    - nvvideoconvert
+    - videorate max-rate=30
+    - nvv4l2h264enc
+    - h264parse
+    - flvmux streamable=true
+    - rtmpsink location=rtmp://localhost:1935/live/video_test
+
+  videoxraw2rtmp:
     - v4l2src device=/dev/video0
     - capsfilter caps="video/x-raw,width=1920, height=1080, framerate=60/1"
     - nvvideoconvert
