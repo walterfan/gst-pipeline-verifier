@@ -14,7 +14,7 @@ namespace wfan {
 
 class PipelineBuilder {
 public:
-    PipelineBuilder();
+
     void list_pipelines(const std::string& pipeline_name);
 
     int init(int argc, char *argv[], const cmd_args_t& args);
@@ -26,11 +26,9 @@ public:
     int read_config_file(const char* szFile);
     int read_all_config_files(const char* szFolder);
 private:
-    
+    int init_gst(int argc, char * argv[]);
     GstElement* create_element(const std::string& factory, const std::string& name);
     GstElement* get_element(const std::string& name);
-    
-    
 
     bool add_element(const std::string& name);
     bool del_element(const std::string& name);

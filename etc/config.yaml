@@ -3,7 +3,7 @@ general:
   log_folder: ./log
   log_name: pipeline_verify
   log_level: 1 # 0:trace, 1: debug, 2: info ...
-
+  debug_threshold: 4 # GST_LEVEL_FIXME=3,GST_LEVEL_INFO=4,..
 pipelines:
   pipeline_test:
     - videotestsrc num-buffers=100

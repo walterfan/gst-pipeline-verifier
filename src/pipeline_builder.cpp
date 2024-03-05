@@ -15,15 +15,11 @@ constexpr auto KEY_GENERAL = "general";
 
 namespace wfan {
 
-PipelineBuilder::PipelineBuilder()
-{
-    
-}
-
 int PipelineBuilder::read_config_file(const char* szFile) {
     m_config_file = szFile;
     yaml_to_str_vec_map(m_config_file, KEY_PIPELINES, m_pipeline_config);
     m_general_config = read_yaml_section(m_config_file, KEY_GENERAL);
+    return m_general_config.empty()? -1: 0;
 }
 
 int PipelineBuilder::read_all_config_files(const char* szFolder) {
@@ -42,9 +38,26 @@ int PipelineBuilder::read_all_config_files(const char* szFolder) {
     return cnt;
 }
 
-int PipelineBuilder::init(int argc, char *argv[], const cmd_args_t& args) {
+
+int init_gst(int argc, char *argv[]) {
     gst_init(&argc, &argv);
-    
+    guint major, minor, micro, nano = 0;
+    gst_version(&major, &minor, &micro, &nano);
+    gst_debug_set_active(TRUE);
+
+    int debug_threshold = Logger::get_instance().get_log_config().debug_threshold;
+    if (debug_threshold <= 0) {
+        debug_threshold = GST_LEVEL_FIXME;
+    }
+    gst_debug_set_default_threshold((GstDebugLevel)debug_threshold);
+
+    g_log_set_handler(NULL, G_LOG_LEVEL_MASK, echo_log_handler, NULL);
+
+    DLOG("gstreamer initialized, gst version = {}.{}.{}.{}", major,minor, micro, nano);
+}
+
+int PipelineBuilder::init(int argc, char *argv[], const cmd_args_t& args) {
+
     if (m_pipeline_config.empty()) {
         ELOG("PipelineBuilder init not read pipeline yaml: {} ", m_config_file);
         return -1;

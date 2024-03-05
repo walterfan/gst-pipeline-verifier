@@ -7,6 +7,7 @@ constexpr auto KEY_GENERAL = "general";
 constexpr auto KEY_LOG_FOLDER = "log_folder";
 constexpr auto KEY_LOG_NAME   = "log_name";
 constexpr auto KEY_LOG_LEVEL  = "log_level";
+constexpr auto KEY_DEBUG_THRESHOLD  = "debug_threshold";
 
 using namespace spdlog;
 using namespace sinks;
@@ -15,19 +16,23 @@ namespace wfan {
 
 
 // read config file
-int LogConfig::load_config(const std::string& config_file) {
-    auto general_config = read_yaml_section(std::string(config_file), KEY_GENERAL);
-    if (general_config.empty()) {
-        log_level = 2;
-        log_folder = "./log";
-        log_name = "pipeline_verify";
+int Logger::load_config(const std::string& config_file) {
+    auto log_config = read_yaml_section(std::string(config_file), KEY_GENERAL);
+    if (log_config.empty()) {
+        m_log_config.log_folder = "./log";
+        m_log_config.log_name = "pipeline_verify";
         return 1;
     }
 
-    log_level = std::stoi(general_config[KEY_LOG_LEVEL]);
-    log_folder = general_config[KEY_LOG_FOLDER];
-    log_name   = general_config[KEY_LOG_NAME];
+    m_log_config.log_level = std::stoi(log_config[KEY_LOG_LEVEL]);
+    m_log_config.debug_threshold = std::stoi(log_config[KEY_DEBUG_THRESHOLD]);
+    m_log_config.log_folder = log_config[KEY_LOG_FOLDER];
+    m_log_config.log_name   = log_config[KEY_LOG_NAME];
     return 0;
+}
+
+LogConfig& get_log_config() {
+    return m_log_config;
 }
 
 Logger& Logger::get_instance()

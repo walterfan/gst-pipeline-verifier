@@ -37,9 +37,9 @@ int verify_pipeline(int argc, char *argv[], void* param=nullptr) {
         //std::cerr << "Use default configuration " << CONFIG_FILE << std::endl;
         config_file = CONFIG_FILE;
     }
-    LogConfig logConfig;
-    logConfig.load_config(config_file);
-
+    
+    Logger::get_instance().load_config(config_file);
+    LogConfig logConfig = Logger::get_instance().get_log_config();
     std::string log_level = std::string(get_option(args, "-d"));
     if (!log_level.empty()) {
         logConfig.log_level = std::stoi(log_level);
