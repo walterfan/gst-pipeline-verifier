@@ -49,10 +49,11 @@ public:
     void reset_level(int level, int flush_level, int flush_interval);
 
     int load_config(const std::string& config_file);
-    LogConfig& get_log_config();
+    const LogConfig& get_log_config() const { return m_log_config; }
 private:
-    std::shared_ptr<spdlog::logger> m_logger;
     LogConfig m_log_config;
+    std::shared_ptr<spdlog::logger> m_logger;
+    
 };
 
 #define TLOG(...) SPDLOG_LOGGER_TRACE(Logger::get_instance().get_logger(), __VA_ARGS__)

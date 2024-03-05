@@ -15,6 +15,31 @@ constexpr auto KEY_GENERAL = "general";
 
 namespace wfan {
 
+static void gst_log_handler(const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer user_data) {
+    switch(log_level) {
+        case G_LOG_LEVEL_ERROR:
+            ELOG("{} {}", log_domain, message);
+            break;
+        case G_LOG_LEVEL_CRITICAL:
+            ELOG("{} {}", log_domain, message);
+            break;
+        case G_LOG_LEVEL_WARNING:
+            WLOG("{} {}", log_domain, message);
+            break;
+        case G_LOG_LEVEL_MESSAGE:
+            ILOG("{} {}", log_domain, message);
+            break;
+        case G_LOG_LEVEL_INFO:
+            ILOG("{} {}", log_domain, message);
+            break;
+        case G_LOG_LEVEL_DEBUG:
+            TLOG("{} {}", log_domain, message);
+            break;
+        default:
+            break;
+    }
+}
+
 int PipelineBuilder::read_config_file(const char* szFile) {
     m_config_file = szFile;
     yaml_to_str_vec_map(m_config_file, KEY_PIPELINES, m_pipeline_config);
@@ -39,7 +64,7 @@ int PipelineBuilder::read_all_config_files(const char* szFolder) {
 }
 
 
-int init_gst(int argc, char *argv[]) {
+int PipelineBuilder::init_gst(int argc, char *argv[]) {
     gst_init(&argc, &argv);
     guint major, minor, micro, nano = 0;
     gst_version(&major, &minor, &micro, &nano);
@@ -51,12 +76,16 @@ int init_gst(int argc, char *argv[]) {
     }
     gst_debug_set_default_threshold((GstDebugLevel)debug_threshold);
 
-    g_log_set_handler(NULL, G_LOG_LEVEL_MASK, echo_log_handler, NULL);
+    g_log_set_handler(NULL, G_LOG_LEVEL_MASK, gst_log_handler, NULL);
 
     DLOG("gstreamer initialized, gst version = {}.{}.{}.{}", major,minor, micro, nano);
+
+    return 0;
 }
 
 int PipelineBuilder::init(int argc, char *argv[], const cmd_args_t& args) {
+    
+    init_gst(argc, argv);
 
     if (m_pipeline_config.empty()) {
         ELOG("PipelineBuilder init not read pipeline yaml: {} ", m_config_file);

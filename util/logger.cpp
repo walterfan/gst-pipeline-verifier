@@ -14,7 +14,6 @@ using namespace sinks;
 
 namespace wfan {
 
-
 // read config file
 int Logger::load_config(const std::string& config_file) {
     auto log_config = read_yaml_section(std::string(config_file), KEY_GENERAL);
@@ -29,10 +28,6 @@ int Logger::load_config(const std::string& config_file) {
     m_log_config.log_folder = log_config[KEY_LOG_FOLDER];
     m_log_config.log_name   = log_config[KEY_LOG_NAME];
     return 0;
-}
-
-LogConfig& get_log_config() {
-    return m_log_config;
 }
 
 Logger& Logger::get_instance()
