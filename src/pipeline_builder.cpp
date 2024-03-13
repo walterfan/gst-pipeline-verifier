@@ -92,8 +92,8 @@ int PipelineBuilder::init(int argc, char *argv[], const cmd_args_t& args) {
         return -1;
     }
 
-    if (has_option(args, "-a")) {
-        read_all_config_files("./etc");
+    if (directory_exists(CONFIG_FOLDER)) {
+        read_all_config_files(CONFIG_FOLDER);
     }
 
     m_pipeline_name = get_option(args, "-p");
@@ -198,7 +198,7 @@ int PipelineBuilder::clean() {
 }
 
 int PipelineBuilder::start() {
-    std::string dot_file = "test_pipeline";
+    std::string dot_file = m_pipeline_name + "_graph";
     //set environment variable, such as export GST_DEBUG_DUMP_DOT_DIR=/tmp
     GST_DEBUG_BIN_TO_DOT_FILE(GST_BIN_CAST(m_pipeline), GST_DEBUG_GRAPH_SHOW_VERBOSE, dot_file.c_str());
 
@@ -256,7 +256,11 @@ bool PipelineBuilder::add_element(const std::string& name) {
                     GstCaps* caps = gst_caps_from_string(value.c_str());
                     g_object_set(G_OBJECT(it->second), key.c_str(), caps, nullptr);
                 } else if(is_number(value)) {
-                    g_object_set(it->second, key.c_str(), str_to_num<int32_t>(value), NULL);    
+                    if (value.find(".") == std::string::npos) {
+                        g_object_set(it->second, key.c_str(), str_to_num<int32_t>(value), NULL);    
+                    } else {
+                        g_object_set(it->second, key.c_str(), str_to_num<float>(value), NULL);    
+                    }                    
                 } else {
                     std::string lower_value = str_tolower(value);
                     if(lower_value == "true") {
@@ -550,8 +554,6 @@ void PipelineBuilder::on_bus_msg_qos(GstMessage* msg) {
     DLOG("[stats] element {}' qos values: jitter={}, proportion={}, quality={}",
          GST_OBJECT_NAME(msg->src), jitter, proportion, quality);
 }
-
-//GST_MESSAGE_APPLICATION
 
 /*
 gst_message_parse_buffering_stats (GstMessage * message,

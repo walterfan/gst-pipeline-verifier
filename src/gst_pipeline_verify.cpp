@@ -24,8 +24,6 @@ using namespace wfan;
 
 constexpr auto SPDLOG_FLUSH_SEC = 3;
 constexpr auto log_pattern = "[%Y-%m-%d %H:%M:%S.%e] [%n] [%l] [%t] [%s:%#] (%!) %v";
-constexpr auto CONFIG_FOLDER = "./etc";
-constexpr auto CONFIG_FILE = "./etc/config.yaml";
 constexpr auto VERSION = "1.0.0";
 constexpr auto USAGE = "-f <config_file> -p <pipeline_name> -d <debug_level> [-l -h -v -a]";
 
@@ -34,8 +32,13 @@ int verify_pipeline(int argc, char *argv[], void* param=nullptr) {
     const std::vector<std::string_view> args(argv, argv + argc);
     std::string config_file = std::string(get_option(args, "-f"));
     if (config_file.empty()) {
-        //std::cerr << "Use default configuration " << CONFIG_FILE << std::endl;
-        config_file = CONFIG_FILE;
+        if (file_exists(CONFIG_FILE)) {
+            config_file = CONFIG_FILE;
+        } else {
+            config_file = CONFIG_FOLDER;
+            config_file.append("/");
+            config_file.append(CONFIG_FILE);
+        }        
     }
     
     Logger::get_instance().load_config(config_file);

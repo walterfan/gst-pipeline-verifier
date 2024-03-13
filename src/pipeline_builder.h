@@ -12,6 +12,9 @@
 
 namespace wfan {
 
+constexpr auto CONFIG_FOLDER = "./etc";
+constexpr auto CONFIG_FILE = "config.yaml";
+
 class PipelineBuilder {
 public:
 

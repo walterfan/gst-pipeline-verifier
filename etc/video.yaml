@@ -1,4 +1,3 @@
-# replace - with !, then use `gst-launch-1.0 $pipeline`
 pipelines:
   pipeline_mp4_rtmp:
     - filesrc location=material/talk.mp4 
@@ -43,3 +42,56 @@ pipelines:
     - x264enc speed-preset=5 tune=4
     - flvmux streamable=true 
     - rtmpsink location=rtmp://localhost:1935/live/waltertest
+
+  recod2flv:
+    - videotestsrc num-buffers=60
+    - x264enc
+    - flvmux
+    - filesink location=abc.flv
+
+  record2mp4:
+    - videotestsrc num-buffers=60
+    - timeoverlay
+    - x264enc
+    - qtmux
+    - filesink location=abc.mp4
+
+  record2hls:
+    - videotestsrc is-live=true num-buffers=100
+    - identity drop-probability=0.5
+    - timeoverlay
+    - x264enc
+    - h264parse
+    - hlssink2 max-files=10 location=/tmp/hls_record_%03d.ts playlist-location=/tmp/hls_playlist.m3u8 target-duration=10
+
+  record_mp4_display:
+    - videotestsrc is-live=true num-buffers=100
+    - timeoverlay
+    - tee name=t t. 
+    - queue leaky=1
+    - x264enc 
+    - mp4mux 
+    - filesink location=xyz.mp4 t. 
+    - queue leaky=1
+    - autovideosink sync=false
+
+  hls2mp4:
+    - filesrc location=material/snapshot_20240227151256.m3u8 
+    - hlsdemux 
+    - filesink location=snapshot_20240227151256.mp4
+
+  hlsplay:
+    - filesrc location="/tmp/hls_playlist.m3u8"
+    - hlsdemux 
+    - decodebin 
+    - videoconvert 
+    #- capsfilter caps='video/x-raw(memory:NVMM),format=NV12,width=1920,height=1080'
+    - fpsdisplaysink text-overlay=true 
+
+  tsplay:
+    - filesrc location="material/record_20240229135840_00012.ts"
+    - tsdemux 
+    - decodebin 
+    - videoconvert 
+    - capsfilter caps='video/x-raw(memory:NVMM),format=NV12,width=1920,height=1080' 
+    - fpsdisplaysink text-overlay=true

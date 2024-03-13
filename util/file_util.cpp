@@ -2,11 +2,25 @@
 #include <fstream>
 #include <vector>
 #include <dirent.h>
+#include <sys/stat.h>
 #include "string_util.h"
 #include "file_util.h"
 #include "yaml-cpp/yaml.h"
 
 namespace wfan {
+
+
+bool directory_exists(const std::string& directory) {
+    struct stat info;
+    if (stat(directory.c_str(), &info) != 0) // stat returns 0 on success
+        return false;
+    return (info.st_mode & S_IFDIR) != 0; // Check if it's a directory
+}
+
+bool file_exists(const std::string& filename) {
+    std::ifstream file(filename);
+    return file.good(); 
+}
 
 int yaml_to_str_vec_map(const std::string& path, 
     const std::string& key1, 

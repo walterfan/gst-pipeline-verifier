@@ -2,6 +2,19 @@
 
 Verifier of GStreamer Pipeline 
 
+## Overview
+
+GStreamer 作为一个多媒体框架和软件库, 其最大的魅力在于它丰富的功能, 强大的灵活性和扩展性.
+它对管道模式的妙用让人叹为观止.
+
+GStreamer 创建好元件(GstElement), 设置好属性, 并逐个加入管道 (pipeline), 将它们连接到一起, 设置好状态(PLAYING state), 多媒体数据 (GstBuffer) 就会流经这些元件, 每个元件就可以对多媒体数据进行处理.
+
+GStreamer 支持多种媒体处理组件，包括简单的音频播放、音频和视频播放、录制、流媒体和编辑。 
+管道设计是创建多种类型的多媒体应用程序的基础，例如视频编辑器、转码器、流媒体广播器和媒体播放器。
+
+这个工具的目的就是为了验证各个管道是否有效, 从功能上与 gst-launch-1.0 有点重复, 不同之处在于采用 yaml 方式存贮和管理 pipeline 的定义, 自己解析和使用 GStreamer C API 来构建和运行管道.
+
+
 ## Usage
 
 ```sh
@@ -15,6 +28,8 @@ Verifier of GStreamer Pipeline
 * -l : list the pipelines in configuration file
 
 * -v : print current version
+
+* -a : load all configuration files
 
 ## Example
 
