@@ -28,10 +28,14 @@ public:
 
     int read_config_file(const char* szFile);
     int read_all_config_files(const char* szFolder);
+
+    AppConfig& get_app_config() { return m_app_config; }
+    int add_probe(const ProbeConfig& probe_config);
 private:
     int init_gst(int argc, char * argv[]);
     GstElement* create_element(const std::string& factory, const std::string& name);
     GstElement* get_element(const std::string& name);
+    GstPad* get_static_pad(const std::string& ele_name, const std::string& pad_name);
 
     bool add_element(const std::string& name);
     bool del_element(const std::string& name);
@@ -41,6 +45,7 @@ private:
 
     static gboolean on_bus_msg(GstBus* bus, GstMessage* msg, gpointer data);
     static void on_src_pad_added(GstElement* element, GstPad* pad, gpointer data);
+    static GstPadProbeReturn static_probe_callback(GstPad *pad, GstPadProbeInfo *info, gpointer user_data);
 
     void on_bus_msg_eos();
     void on_bus_msg_error(GstMessage* msg);
@@ -52,7 +57,7 @@ private:
     void on_bus_msg_buffering_stats(GstMessage* msg);
 
     std::string m_config_file;
-    config_map_t m_general_config;
+    AppConfig m_app_config;
     pipeline_config_t m_pipeline_config;
     std::map<std::string, GstElement*> m_elements;
     GstBus* m_bus;

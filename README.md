@@ -14,6 +14,23 @@ GStreamer 支持多种媒体处理组件，包括简单的音频播放、音频�
 
 这个工具的目的就是为了验证各个管道是否有效, 从功能上与 gst-launch-1.0 有点重复, 不同之处在于采用 yaml 方式存贮和管理 pipeline 的定义, 自己解析和使用 GStreamer C API 来构建和运行管道.
 
+GStreamer 可以完成如下工作
+
+* Audio/Video decode
+* Audio/Video encode
+* Audio/Video stream capture
+* Audio/Video playback
+* Audio/Video streaming
+* Audio/Video format conversion
+* Audio resample
+* Video scaling
+* Video Cropping
+* Video transcode
+* Video Rotation
+* Video Composition
+* ...
+
+基于 GStreamer 这样扩展出来的 DeepStream 可以做更加深入的视频分析和图像识别 
 
 ## Usage
 

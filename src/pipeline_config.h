@@ -11,6 +11,7 @@
 
 namespace wfan {
 
+
 struct ElementConfig {
     ElementConfig(const std::string& desc);
     void parse_desc(const std::string& desc);
@@ -42,4 +43,31 @@ struct PipelineConfig {
     //parsed elements configuration
     std::vector<std::shared_ptr<ElementConfig>> m_elements_config;
 };
+
+struct GeneralConfig {
+    int debug_threshold = 3;
+    int log_level = 2;    
+    std::string log_folder;
+    std::string log_name;
+    std::string default_pipeline;
+};
+
+
+struct ProbeConfig {
+    std::string probe_pipeline;
+    std::string probe_element_name;
+    std::string probe_pad_name;
+    int probe_type;
+};
+
+
+class AppConfig {
+public:
+    GeneralConfig& get_general_config() { return m_general_config; };
+    ProbeConfig& get_probe_config()  { return m_probe_config; };
+private:
+    GeneralConfig m_general_config;
+    ProbeConfig m_probe_config;
+};
+
 }//namespace wfan

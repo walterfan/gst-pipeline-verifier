@@ -11,7 +11,12 @@ constexpr auto KEY_DEFAULT_PIPELINE = "default_pipeline";
 constexpr auto DECODE_BIN = "decodebin";
 constexpr auto DEMUX = "demux";
 constexpr auto KEY_PIPELINES = "pipelines";
+constexpr auto KEY_PROBE = "probes";
 constexpr auto KEY_GENERAL = "general";
+constexpr auto KEY_LOG_FOLDER = "log_folder";
+constexpr auto KEY_LOG_NAME   = "log_name";
+constexpr auto KEY_LOG_LEVEL  = "log_level";
+constexpr auto KEY_DEBUG_THRESHOLD  = "debug_threshold";
 
 namespace wfan {
 
@@ -43,8 +48,15 @@ static void gst_log_handler(const gchar *log_domain, GLogLevelFlags log_level, c
 int PipelineBuilder::read_config_file(const char* szFile) {
     m_config_file = szFile;
     yaml_to_str_vec_map(m_config_file, KEY_PIPELINES, m_pipeline_config);
-    m_general_config = read_yaml_section(m_config_file, KEY_GENERAL);
-    return m_general_config.empty()? -1: 0;
+    std::map<std::string, std::string> config_map = read_yaml_section(m_config_file, KEY_GENERAL);
+
+    m_app_config.get_general_config().log_name = config_map[KEY_LOG_NAME];
+    m_app_config.get_general_config().log_level = std::stoi(config_map[KEY_LOG_LEVEL]);
+    m_app_config.get_general_config().log_folder = config_map[KEY_LOG_FOLDER];
+
+    m_app_config.get_general_config().debug_threshold = std::stoi(config_map[KEY_DEBUG_THRESHOLD]);
+    m_app_config.get_general_config().default_pipeline = config_map[KEY_DEFAULT_PIPELINE];
+    return 0;
 }
 
 int PipelineBuilder::read_all_config_files(const char* szFolder) {
@@ -70,7 +82,7 @@ int PipelineBuilder::init_gst(int argc, char *argv[]) {
     gst_version(&major, &minor, &micro, &nano);
     gst_debug_set_active(TRUE);
 
-    int debug_threshold = Logger::get_instance().get_log_config().debug_threshold;
+    int debug_threshold = m_app_config.get_general_config().debug_threshold;
     if (debug_threshold <= 0) {
         debug_threshold = GST_LEVEL_FIXME;
     }
@@ -98,7 +110,7 @@ int PipelineBuilder::init(int argc, char *argv[], const cmd_args_t& args) {
 
     m_pipeline_name = get_option(args, "-p");
     if (m_pipeline_name.empty()) {
-        m_pipeline_name = m_general_config[KEY_DEFAULT_PIPELINE];
+        m_pipeline_name = m_app_config.get_general_config().default_pipeline;
     }
 
     auto it = m_pipeline_config.find(std::string(m_pipeline_name));
@@ -233,6 +245,15 @@ GstElement* PipelineBuilder::get_element(const std::string& name) {
         return it->second;
     }
     return nullptr;
+}
+
+GstPad* PipelineBuilder::get_static_pad(const std::string& ele_name, const std::string& pad_name) {
+    GstElement* element = get_element(ele_name);
+    if (!element) {
+        return nullptr;
+    }
+
+    return gst_element_get_static_pad(element, pad_name.c_str());
 }
 
 bool PipelineBuilder::add_element(const std::string& name) {
@@ -573,4 +594,31 @@ void PipelineBuilder::on_bus_msg_buffering_stats(GstMessage* msg) {
     DLOG("[stats] element {}' buffering stats: mode={}, avg_in={}, avg_out={}, buffering_left={}",
          GST_OBJECT_NAME(msg->src), (int)mode, avg_in, avg_out, buffering_left);
 }
+
+GstPadProbeReturn PipelineBuilder::static_probe_callback(GstPad *pad, GstPadProbeInfo *info, gpointer user_data) {
+
+    PipelineBuilder* thiz = (PipelineBuilder*) user_data;
+    
+
+    return GST_PAD_PROBE_OK;
+}
+
+int PipelineBuilder::add_probe(const ProbeConfig& probe_config) {
+    GstElement* element = gst_bin_get_by_name((GstBin*)m_pipeline, probe_config.probe_element_name.c_str());
+    if (!element) {
+        return -1;
+    }
+    GstPad *probe_pad = gst_element_get_static_pad(element, probe_config.probe_pad_name.c_str());
+    if (!probe_pad) {
+        return -2;
+    }
+
+    gulong probe_id = gst_pad_add_probe(probe_pad,
+                GST_PAD_PROBE_TYPE_BLOCK_DOWNSTREAM, 
+                static_probe_callback, this, NULL);
+        gst_object_unref(probe_pad);
+    
+    DLOG("Add probe recording");
+}
+
 } //namespace wfan

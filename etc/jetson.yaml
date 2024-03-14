@@ -63,10 +63,37 @@ pipelines:
     - v4l2src device=/dev/video0
     - capsfilter caps="video/x-raw,width=1920,height=1080, framerate=60/1"
     - nvvideoconvert
-      # need set w,h,fps besides format 
     - capsfilter caps="video/x-raw(memory:NVMM),format=NV12,width=1920,height=1080, framerate=60/1"
     - queue
     - videorate max-rate=30
     - nvvideoconvert
     - capsfilter caps="video/x-raw(memory:NVMM),width=1920,height=1080, framerate=30/1"
     - nvoverlaysink sync=0
+
+  video_jpeg:
+    - v4l2src device=/dev/video1
+    - capsfilter caps="image/jpeg,width=1920,height=1080"
+    - nvv4l2decoder mjpeg=1
+    - nvvideoconvert
+    - xvimagesink sync=0
+
+  video_xraw:
+    - v4l2src device=/dev/video0
+    - capsfilter caps="video/x-raw,width=1920,height=1080"
+    - nvvideoconvert
+    - xvimagesink sync=0
+
+  video_record:
+    - v4l2src device=/dev/video1
+    - capsfilter caps="image/jpeg,width=1920,height=1080,framerate=30/1"
+    - nvv4l2decoder mjpeg=1
+    - nvvideoconvert
+    - capsfilter caps="video/x-raw(memory:NVMM),format=NV12,width=1920,height=1080,framerate=30/1"
+    - tee name=t t. 
+    - queue
+    - nvv4l2h264enc
+    - h264parse
+    - hlssink2 max-files=10 location=/tmp/hls_record_%03d.ts playlist-location=/tmp/hls_playlist.m3u8 target-duration=10 t.
+    - queue
+    - autovideosink    
+    

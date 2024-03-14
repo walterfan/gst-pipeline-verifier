@@ -41,8 +41,12 @@ int verify_pipeline(int argc, char *argv[], void* param=nullptr) {
         }        
     }
     
-    Logger::get_instance().load_config(config_file);
-    LogConfig logConfig = Logger::get_instance().get_log_config();
+    int ret = 0;
+    auto verifier = std::make_unique<PipelineBuilder>();
+    verifier->read_config_file(config_file.c_str());
+
+    //Logger::get_instance().load_config(config_file);
+    GeneralConfig& logConfig = verifier->get_app_config().get_general_config();
     std::string log_level = std::string(get_option(args, "-d"));
     if (!log_level.empty()) {
         logConfig.log_level = std::stoi(log_level);
@@ -70,9 +74,7 @@ int verify_pipeline(int argc, char *argv[], void* param=nullptr) {
         return 0;
     }
 
-    int ret = 0;
-    auto verifier = std::make_unique<PipelineBuilder>();
-    verifier->read_config_file(config_file.c_str());
+    
 
     if (has_option(args, "-a")) {
         verifier->read_all_config_files(CONFIG_FOLDER);

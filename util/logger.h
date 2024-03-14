@@ -48,8 +48,6 @@ public:
     void init(const std::string& folder, const std::string& name, int file_size, int file_count);
     void reset_level(int level, int flush_level, int flush_interval);
 
-    int load_config(const std::string& config_file);
-    const LogConfig& get_log_config() const { return m_log_config; }
 private:
     LogConfig m_log_config;
     std::shared_ptr<spdlog::logger> m_logger;

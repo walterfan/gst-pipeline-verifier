@@ -58,7 +58,7 @@ pipelines:
 
   record2hls:
     - videotestsrc is-live=true num-buffers=100
-    - identity drop-probability=0.5
+    - identity
     - timeoverlay
     - x264enc
     - h264parse

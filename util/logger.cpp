@@ -3,32 +3,11 @@
 #include <iostream>
 #include "file_util.h"
 
-constexpr auto KEY_GENERAL = "general";
-constexpr auto KEY_LOG_FOLDER = "log_folder";
-constexpr auto KEY_LOG_NAME   = "log_name";
-constexpr auto KEY_LOG_LEVEL  = "log_level";
-constexpr auto KEY_DEBUG_THRESHOLD  = "debug_threshold";
-
 using namespace spdlog;
 using namespace sinks;
 
 namespace wfan {
 
-// read config file
-int Logger::load_config(const std::string& config_file) {
-    auto log_config = read_yaml_section(std::string(config_file), KEY_GENERAL);
-    if (log_config.empty()) {
-        m_log_config.log_folder = "./log";
-        m_log_config.log_name = "pipeline_verify";
-        return 1;
-    }
-
-    m_log_config.log_level = std::stoi(log_config[KEY_LOG_LEVEL]);
-    m_log_config.debug_threshold = std::stoi(log_config[KEY_DEBUG_THRESHOLD]);
-    m_log_config.log_folder = log_config[KEY_LOG_FOLDER];
-    m_log_config.log_name   = log_config[KEY_LOG_NAME];
-    return 0;
-}
 
 Logger& Logger::get_instance()
 {
