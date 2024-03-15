@@ -30,7 +30,7 @@ public:
     int read_all_config_files(const char* szFolder);
 
     AppConfig& get_app_config() { return m_app_config; }
-    int add_probe(const ProbeConfig& probe_config);
+    int add_probe(const ProbeConfigItem& probe_config_item);
 private:
     int init_gst(int argc, char * argv[]);
     GstElement* create_element(const std::string& factory, const std::string& name);
@@ -60,14 +60,18 @@ private:
     AppConfig m_app_config;
     pipeline_config_t m_pipeline_config;
     std::map<std::string, GstElement*> m_elements;
+
     GstBus* m_bus;
     GMainLoop* m_loop;
     GstElement* m_pipeline;
+    
     std::string m_pipeline_name;
     std::shared_ptr<PipelineConfig> m_pipelie_config;
 
     std::vector<std::pair<GstElement*, GstElement*>> m_linked_elements;
     std::vector<std::pair<GstPad*, GstPad*>> m_linked_pads;
+
+    std::atomic<unsigned long> m_probe_count;
 };
 
 } //namespace wfan

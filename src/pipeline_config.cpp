@@ -131,4 +131,16 @@ int PipelineConfig::check_elements_name() {
     return 0;
 }
 
+bool ProbeConfig::has_probe_config_item(const std::string& item_name) {
+    return config_items.find(item_name) != config_items.end();
+}
+
+ProbeConfigItem& ProbeConfig::get_probe_config_item(const std::string& item_name) {
+    return config_items[item_name];
+}
+
+void ProbeConfig::add_probe_config_item(const ProbeConfigItem& probeConfigItem) {
+    config_items[probeConfigItem.probe_pipeline_name] = probeConfigItem;
+}
+
 } //namespace wfan

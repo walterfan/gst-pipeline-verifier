@@ -112,6 +112,11 @@ bool is_number(const std::string& s)
     return !s.empty() && it == s.end();
 }
 
+int str_to_int(const std::string& s) {
+    if(is_number(s)) return stoi(s);
+    return -1;
+}
+
 std::string trim(const std::string& str, const std::string& whitespace)
 {
     std::string::size_type strBegin = str.find_first_not_of(whitespace);

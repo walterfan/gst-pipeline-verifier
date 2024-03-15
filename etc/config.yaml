@@ -33,7 +33,7 @@ pipelines:
     - filesrc location=./material/talk.mp4 
     - decodebin name=dec
     - videoconvert 
-    - clockoverlay 
+    - timeoverlay 
     - autovideosink dec. 
     - audioconvert 
     - audioresample 
@@ -74,6 +74,7 @@ pipelines:
 probes:
   mp4_play_probe:
     probe_pipeline: mp4_play
-    probe_element: queue0
-    probe_pad: sink
-    probe_type: GST_PAD_PROBE_TYPE_BUFFER
+    probe_element: timeoverlay
+    probe_pad: src 
+    #GST_PAD_PROBE_TYPE_BUFFER (16) – probe buffers
+    probe_type: 16

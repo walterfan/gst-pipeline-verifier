@@ -4,6 +4,7 @@
 #include "pipeline_builder.h"
 #include "logger.h"
 #include <vector>
+#include "yaml-cpp/yaml.h"
 
 using namespace std;
 
@@ -11,7 +12,7 @@ constexpr auto KEY_DEFAULT_PIPELINE = "default_pipeline";
 constexpr auto DECODE_BIN = "decodebin";
 constexpr auto DEMUX = "demux";
 constexpr auto KEY_PIPELINES = "pipelines";
-constexpr auto KEY_PROBE = "probes";
+constexpr auto KEY_PROBES = "probes";
 constexpr auto KEY_GENERAL = "general";
 constexpr auto KEY_LOG_FOLDER = "log_folder";
 constexpr auto KEY_LOG_NAME   = "log_name";
@@ -47,15 +48,47 @@ static void gst_log_handler(const gchar *log_domain, GLogLevelFlags log_level, c
 
 int PipelineBuilder::read_config_file(const char* szFile) {
     m_config_file = szFile;
-    yaml_to_str_vec_map(m_config_file, KEY_PIPELINES, m_pipeline_config);
-    std::map<std::string, std::string> config_map = read_yaml_section(m_config_file, KEY_GENERAL);
 
-    m_app_config.get_general_config().log_name = config_map[KEY_LOG_NAME];
-    m_app_config.get_general_config().log_level = std::stoi(config_map[KEY_LOG_LEVEL]);
-    m_app_config.get_general_config().log_folder = config_map[KEY_LOG_FOLDER];
+    YAML::Node config = YAML::LoadFile(szFile);
 
-    m_app_config.get_general_config().debug_threshold = std::stoi(config_map[KEY_DEBUG_THRESHOLD]);
-    m_app_config.get_general_config().default_pipeline = config_map[KEY_DEFAULT_PIPELINE];
+    if (config[KEY_PIPELINES]) {
+        YAML::Node childNode = config[KEY_PIPELINES];
+        YAML::const_iterator it=childNode.begin();     
+        for (; it!=childNode.end(); ++it) {
+            std::string key = it->first.as<std::string>();
+            std::vector<std::string> vals = it->second.as<std::vector<std::string>>();
+            m_pipeline_config.emplace(std::make_pair(key, vals));
+        }
+    }
+
+    if (config[KEY_GENERAL]) {
+        auto config_map = config[KEY_GENERAL].as<std::map<std::string, std::string>>();
+       
+        m_app_config.get_general_config().log_name = config_map[KEY_LOG_NAME];
+        m_app_config.get_general_config().log_level = str_to_int(config_map[KEY_LOG_LEVEL]);
+        m_app_config.get_general_config().log_folder = config_map[KEY_LOG_FOLDER];
+
+        m_app_config.get_general_config().debug_threshold = str_to_int(config_map[KEY_DEBUG_THRESHOLD]);
+        m_app_config.get_general_config().default_pipeline = config_map[KEY_DEFAULT_PIPELINE];
+    }
+
+    if (config[KEY_PROBES]) {
+        YAML::Node childNode = config[KEY_PROBES];
+        YAML::const_iterator it=childNode.begin();     
+        for (; it!=childNode.end(); ++it) {
+            std::string key = it->first.as<std::string>();
+            std::map<std::string, std::string> vals = it->second.as<std::map<std::string, std::string>>();
+            ProbeConfigItem probeConfigItem;
+            probeConfigItem.probe_pipeline_name = vals["probe_pipeline"];
+            probeConfigItem.probe_element_name = vals["probe_element"];
+            probeConfigItem.probe_pad_name = vals["probe_pad"];
+            probeConfigItem.probe_type = str_to_int(vals["probe_type"]);
+            m_app_config.get_probe_config().add_probe_config_item(probeConfigItem);     
+        }
+    }
+
+    
+
     return 0;
 }
 
@@ -210,6 +243,10 @@ int PipelineBuilder::clean() {
 }
 
 int PipelineBuilder::start() {
+    if (m_app_config.has_probe_config_item(m_pipeline_name)) {
+        add_probe(m_app_config.get_probe_config_item(m_pipeline_name));
+    }
+    
     std::string dot_file = m_pipeline_name + "_graph";
     //set environment variable, such as export GST_DEBUG_DUMP_DOT_DIR=/tmp
     GST_DEBUG_BIN_TO_DOT_FILE(GST_BIN_CAST(m_pipeline), GST_DEBUG_GRAPH_SHOW_VERBOSE, dot_file.c_str());
@@ -313,9 +350,8 @@ bool PipelineBuilder::del_element(const std::string& name) {
         if(gst_bin_remove(GST_BIN(m_pipeline), (e))) {             
             DLOG("remove/delete succeed for element {}",  name);
             m_elements.erase(it);
-            //TODO: need unrefe here?
-            //gst_object_unref(GST_OBJECT(e));
-            //e = nullptr;
+            //need not unref element here becase gst_bin_remove already unref the elements
+            //gst_object_unref(GST_OBJECT(e)); e = nullptr;
             return true;
         } else {                                           
             ELOG("remove failed for element {}",  name);           
@@ -423,7 +459,7 @@ bool PipelineBuilder::unlink_elements() {
 
 gboolean PipelineBuilder::on_bus_msg(GstBus* bus, GstMessage* msg, gpointer data) {
     
-    DLOG("on_bus_msg: type={}, type name={}, source={}", 
+    TLOG("on_bus_msg: type={}, type name={}, source={}", 
         (int)GST_MESSAGE_TYPE(msg),
         GST_MESSAGE_TYPE_NAME(msg),
         GST_OBJECT_NAME(msg->src));
@@ -507,7 +543,7 @@ void PipelineBuilder::on_state_changed(GstMessage* msg) {
     GstState old_state, new_state, pending_state;
     gst_message_parse_state_changed (msg, &old_state, &new_state, &pending_state);
 
-    DLOG("state changed from {} to {} for {}"
+    TLOG("state changed from {} to {} for {}"
                , gst_element_state_get_name (old_state)
                , gst_element_state_get_name(new_state)
                , GST_OBJECT_NAME(msg->src));
@@ -598,27 +634,39 @@ void PipelineBuilder::on_bus_msg_buffering_stats(GstMessage* msg) {
 GstPadProbeReturn PipelineBuilder::static_probe_callback(GstPad *pad, GstPadProbeInfo *info, gpointer user_data) {
 
     PipelineBuilder* thiz = (PipelineBuilder*) user_data;
-    
+    if (thiz) {
+        thiz->m_probe_count++;
+        if (thiz->m_probe_count < 10) {
+            DLOG("probe callback: {}. pad name={}, direction={}, type={}", 
+                thiz->m_probe_count.load(), GST_PAD_NAME(pad), (int)GST_PAD_DIRECTION(pad), (int)info->type);    
+        }        
+    }
 
     return GST_PAD_PROBE_OK;
 }
 
-int PipelineBuilder::add_probe(const ProbeConfig& probe_config) {
-    GstElement* element = gst_bin_get_by_name((GstBin*)m_pipeline, probe_config.probe_element_name.c_str());
+int PipelineBuilder::add_probe(const ProbeConfigItem& probe_config_item) {
+    DLOG("Add probe for {}'{}, pad name={}", 
+        probe_config_item.probe_pipeline_name, 
+        probe_config_item.probe_element_name, 
+        probe_config_item.probe_pad_name);
+    GstElement* element = gst_bin_get_by_name((GstBin*)m_pipeline, probe_config_item.probe_element_name.c_str());
     if (!element) {
+        ELOG("Add probe but not found element {}", probe_config_item.probe_element_name);
         return -1;
     }
-    GstPad *probe_pad = gst_element_get_static_pad(element, probe_config.probe_pad_name.c_str());
+    GstPad *probe_pad = gst_element_get_static_pad(element, probe_config_item.probe_pad_name.c_str());
     if (!probe_pad) {
+        ELOG("Add probe but not found pad {}", probe_config_item.probe_pad_name);
         return -2;
     }
 
     gulong probe_id = gst_pad_add_probe(probe_pad,
-                GST_PAD_PROBE_TYPE_BLOCK_DOWNSTREAM, 
+                (GstPadProbeType)probe_config_item.probe_type, 
                 static_probe_callback, this, NULL);
         gst_object_unref(probe_pad);
     
-    DLOG("Add probe recording");
+    DLOG("Add probe probe_id={}", probe_id);
 }
 
 } //namespace wfan

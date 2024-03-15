@@ -31,6 +31,8 @@ std::string str_tolower(std::string s);
 
 bool is_number(const std::string& s);
 
+int str_to_int(const std::string& s);
+
 int find_closed_smaller_value(std::vector<std::string>& numbers, const std::string& target);
 
 int find_closed_bigger_value(std::vector<std::string>& numbers, const std::string& target);
