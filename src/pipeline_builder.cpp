@@ -18,10 +18,11 @@ constexpr auto KEY_LOG_FOLDER = "log_folder";
 constexpr auto KEY_LOG_NAME   = "log_name";
 constexpr auto KEY_LOG_LEVEL  = "log_level";
 constexpr auto KEY_DEBUG_THRESHOLD  = "debug_threshold";
+constexpr auto KEY_HTTP_ENABLED  = "http_enabled";
 constexpr auto KEY_HTTP_PORT  = "http_port";
 constexpr auto KEY_WEB_ROOT  = "web_root";
 
-namespace wfan {
+namespace hefei {
 
 static void gst_log_handler(const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer user_data) {
     switch(log_level) {
@@ -48,6 +49,15 @@ static void gst_log_handler(const gchar *log_domain, GLogLevelFlags log_level, c
     }
 }
 
+PipelineBuilder::PipelineBuilder(int argc, char *argv[]) {
+    gst_init(&argc, &argv);
+}
+
+PipelineBuilder::~PipelineBuilder() {
+    gst_deinit();
+}
+
+
 int PipelineBuilder::read_config_file(const char* szFile) {
     m_config_file = szFile;
 
@@ -73,6 +83,7 @@ int PipelineBuilder::read_config_file(const char* szFile) {
         m_app_config.get_general_config().debug_threshold = str_to_int(config_map[KEY_DEBUG_THRESHOLD]);
         m_app_config.get_general_config().default_pipeline = config_map[KEY_DEFAULT_PIPELINE];
     
+        m_app_config.get_general_config().http_enabled = str_to_int(config_map[KEY_HTTP_ENABLED]);
         m_app_config.get_general_config().http_port = str_to_int(config_map[KEY_HTTP_PORT]);
         m_app_config.get_general_config().web_root = config_map[KEY_WEB_ROOT];
     }
@@ -113,7 +124,7 @@ int PipelineBuilder::read_all_config_files(const char* szFolder) {
 
 
 int PipelineBuilder::init_gst(int argc, char *argv[]) {
-    gst_init(&argc, &argv);
+    //gst_init(&argc, &argv);
     guint major, minor, micro, nano = 0;
     gst_version(&major, &minor, &micro, &nano);
     gst_debug_set_active(TRUE);
@@ -131,16 +142,15 @@ int PipelineBuilder::init_gst(int argc, char *argv[]) {
     return 0;
 }
 
-int PipelineBuilder::init(int argc, char *argv[], const cmd_args_t& args) {
-    
-    init_gst(argc, argv);
+int PipelineBuilder::init(const std::string& pipeline_name) {
+    init_gst(NULL, NULL);
 
     if (m_pipeline_config.empty()) {
         ELOG("PipelineBuilder init not read pipeline yaml: {} ", m_config_file);
         return -1;
     }
 
-    m_pipeline_name = get_option(args, "-p");
+    m_pipeline_name = pipeline_name;
     if (m_pipeline_name.empty()) {
         m_pipeline_name = m_app_config.get_general_config().default_pipeline;
     }
@@ -630,30 +640,58 @@ void PipelineBuilder::on_bus_msg_buffering_stats(GstMessage* msg) {
          GST_OBJECT_NAME(msg->src), (int)mode, avg_in, avg_out, buffering_left);
 }
 
-    GstPadProbeReturn PipelineBuilder::probe_data_callback(GstPad *pad, GstPadProbeInfo *info, gpointer user_data)
-    {
+GstPadProbeReturn PipelineBuilder::probe_pad_callback(GstPad *pad, GstPadProbeInfo *info, gpointer user_data)
+{
 
-        PipelineBuilder *thiz = (PipelineBuilder *)user_data;
-        if (thiz)
+    PipelineBuilder *thiz = (PipelineBuilder *)user_data;
+    if (thiz)
+    {
+        thiz->m_probe_count++;
+        if (thiz->m_probe_count)
         {
-            thiz->m_probe_count++;
-            if (thiz->m_probe_count)
+            if (is_probe_event(info))
             {
-                DLOG("probe callback: {}. pad name={}, direction={}, type={}({})",
-                     thiz->m_probe_count.load(), GST_PAD_NAME(pad), (int)GST_PAD_DIRECTION(pad),
-                     (int)info->type, int_to_binary(info->type));
-                if (GST_PAD_PROBE_TYPE_BUFFER & info->type)
-                {
+                GstEvent *event = GST_PAD_PROBE_INFO_EVENT(info);
+                if (event != NULL) {
+                    GstEventType type = GST_EVENT_TYPE(event);
+                    DLOG("probe callback: {}. received event type={}", 
+                            thiz->m_probe_count.load(), 
+                            gst_event_type_get_name(type));
                 }
-                if (thiz->m_probe_count.load() > 10)
-                {
+
+            } else if (is_probe_query(info)){
+                GstQuery *query = GST_PAD_PROBE_INFO_QUERY(info);
+                if (query != NULL) {
+                    GstQueryType type = GST_QUERY_TYPE(query);
+                    DLOG("probe callback: {}. received query type={}", 
+                        thiz->m_probe_count.load(), 
+                        gst_query_type_get_name(type));
+                }
+            } else if (is_probe_buffer(info)) {
+                GstBuffer *buf = (GstBuffer *) info->data;
+                GstMapInfo in_map_info;
+                memset (&in_map_info, 0, sizeof (in_map_info));
+
+                if (gst_buffer_map (buf, &in_map_info, GST_MAP_READ)) {
+                    
+                    //std::string hexstr = bytesToHex(in_map_info.data, in_map_info.size);
+                    DLOG("probe callback: {}. received type=buffer size={}" ,
+                        thiz->m_probe_count.load(),
+                        in_map_info.size);
+                    
                     return GST_PAD_PROBE_REMOVE;
                 }
+            } else {
+                DLOG("probe callback: {}. pad name={}, received type={}({})",
+                    thiz->m_probe_count.load(), GST_PAD_NAME(pad), 
+                    (int)info->type, int_to_binary(info->type));
+                    return GST_PAD_PROBE_REMOVE;
             }
         }
-
-        return GST_PAD_PROBE_OK;
     }
+
+    return GST_PAD_PROBE_OK;
+}
 
 int PipelineBuilder::add_probe(const ProbeConfigItem& probe_config_item) {
     DLOG("Add probe for {}'{}, pad name={}", 
@@ -673,11 +711,11 @@ int PipelineBuilder::add_probe(const ProbeConfigItem& probe_config_item) {
 
     gulong probe_id = gst_pad_add_probe(probe_pad,
                 (GstPadProbeType)probe_config_item.probe_type, 
-                probe_data_callback, this, NULL);
+                probe_pad_callback, this, NULL);
         gst_object_unref(probe_pad);
     
     DLOG("Add probe probe_id={}", probe_id);
     return 0;
 }
 
-} //namespace wfan
+} //namespace hefei

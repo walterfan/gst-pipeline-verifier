@@ -9,7 +9,7 @@
 #include "string_util.h"
 #include "file_util.h"
 
-namespace wfan {
+namespace hefei {
 
 
 struct ElementConfig {
@@ -45,7 +45,7 @@ struct PipelineConfig {
 };
 
 struct GeneralConfig {
-
+    int http_enabled = 0;
     int http_port = 9988;
     int debug_threshold = 3;
     int log_level = 2; 
@@ -83,4 +83,4 @@ private:
     ProbeConfig m_probe_config;
 };
 
-}//namespace wfan
+}//namespace hefei

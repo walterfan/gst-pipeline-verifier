@@ -8,7 +8,7 @@ using namespace std;
 
 static const std::string DOT = ".";
 
-namespace wfan {
+namespace hefei {
 
 ElementConfig::ElementConfig(const std::string& desc) {
     parse_desc(desc);
@@ -143,4 +143,4 @@ void ProbeConfig::add_probe_config_item(const ProbeConfigItem& probeConfigItem) 
     config_items[probeConfigItem.probe_pipeline_name] = probeConfigItem;
 }
 
-} //namespace wfan
+} //namespace hefei

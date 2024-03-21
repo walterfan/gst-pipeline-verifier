@@ -11,7 +11,7 @@
 #include <sstream> // stringstream
 #include <iomanip> // put_time
 
-namespace wfan {
+namespace hefei {
 
 std::string time_to_str(std::time_t time, const char* fmt) {
     std::stringstream ss;
@@ -40,4 +40,4 @@ TimePoint str_to_timepoint(const std::string& strTime, const char* fmt) {
     return std::chrono::system_clock::from_time_t(std::mktime(&timeInfo));
 }
 
-} /* namespace wfan */
+} /* namespace hefei */

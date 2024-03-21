@@ -4,7 +4,7 @@ static const std::string BLANK_STR = "";
 static const std::string DOT_STR = ".";
 
 
-namespace wfan {
+namespace hefei {
 
 
 GstPadPresence get_one_pad_presence(const char* factory_name, GstPadDirection direction) {
@@ -247,6 +247,20 @@ bool is_probe_buffer(GstPadProbeInfo *info) {
     || GST_PAD_PROBE_TYPE_BUFFER_LIST & info->type;
 }
 
+std::string get_event_tag_str(GstEvent *event) {
+    std::string retstr = "";
+    if (GST_EVENT_TYPE(event) == GST_EVENT_TAG) {
+        GstTagList *taglist;
+        gst_event_parse_tag(event, &taglist);
+        
+        if (taglist != NULL) {
+            gchar *tag_string = gst_tag_list_to_string(taglist);
+            retstr = tag_string;
+            g_free(tag_string);
+            gst_tag_list_unref(taglist);
+        }
+    }
+    return retstr;
+}
 
-
-}//namespace wfan
+}//namespace hefei

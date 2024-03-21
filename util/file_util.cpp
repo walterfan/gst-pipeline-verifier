@@ -7,7 +7,7 @@
 #include "file_util.h"
 #include "yaml-cpp/yaml.h"
 
-namespace wfan {
+namespace hefei {
 
 
 bool directory_exists(const std::string& directory) {
@@ -73,4 +73,4 @@ int retrieve_files(const char* szFolder, std::vector<std::string>& files)
   return files.size();
 }
 
-} //namespace wfan
+} //namespace hefei

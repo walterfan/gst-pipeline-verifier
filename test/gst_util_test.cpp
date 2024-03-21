@@ -6,7 +6,7 @@
 
 using namespace std;
 using namespace testing;
-using namespace wfan;
+using namespace hefei;
 
 
 TEST(GstUtilTest, get_pad_name_from_link_tag)

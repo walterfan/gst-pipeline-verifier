@@ -10,5 +10,5 @@ target_link_libraries(common_util
     ${GST_LIBRARIES} 
     fmt::fmt 
     spdlog::spdlog
-    yaml-cpp
+    yaml-cpp::yaml-cpp
     pthread)

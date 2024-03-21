@@ -6,7 +6,7 @@
 
 #include "web_console.h"
 
-namespace wfan {
+namespace hefei {
 
 bool TestHandler::handleGet(CivetServer *server, struct mg_connection *conn) {
     const struct mg_request_info *req_info = mg_get_request_info(conn);
@@ -108,4 +108,4 @@ int start_web_server(const char *doc_root, int port)
     return 0;
 }
 
-}//namespace wfan
+}//namespace hefei

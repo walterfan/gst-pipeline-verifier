@@ -16,7 +16,7 @@ constexpr auto DEFAUT_TIME_FMT = "%Y%m%d%H%M%S";
 constexpr auto SHORT_TIME_FMT = "%y%m%d_%H%M%S";
 constexpr auto SHORT_TIME_HOUR_FMT = "%y%m%d_%H";
 
-namespace wfan {
+namespace hefei {
 
 using TimePoint = std::chrono::time_point<std::chrono::system_clock>;
 
@@ -33,6 +33,6 @@ TimePoint str_to_timepoint(const std::string& strTime,
     const char* fmt = DEFAUT_TIME_FMT);
 
 
-} /* namespace wfan */
+} /* namespace hefei */
 
 #endif /* WFAN_TIME_UTIL_H_ */

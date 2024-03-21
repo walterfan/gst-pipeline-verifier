@@ -8,7 +8,7 @@
 #include <gst/sdp/sdp.h>
 #include <gst/rtp/rtp.h>
 
-namespace wfan {
+namespace hefei {
 
 #define VIDEO_PAD_NAME  "video"
 #define AUDIO_PAD_NAME  "audio"
@@ -63,8 +63,10 @@ void log_handler(const gchar *log_domain,
 
 std::string get_pad_name_from_link_tag(const std::string& link_tag);
 
+std::string get_event_tag_str(GstEvent *event);
+
 bool is_probe_event(GstPadProbeInfo *info);
 bool is_probe_query(GstPadProbeInfo *info);
 bool is_probe_buffer(GstPadProbeInfo *info);
 
-} //namespace wfan
+} //namespace hefei

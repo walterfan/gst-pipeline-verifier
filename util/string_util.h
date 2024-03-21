@@ -6,7 +6,7 @@
 #include <vector>
 #include <sstream>
 
-namespace wfan {
+namespace hefei {
 
 using cmd_args_t = std::vector<std::string_view>;
 
@@ -65,14 +65,8 @@ static inline std::string trim_copy(std::string s) {
     return s;
 }
 
-bool has_option(
-    const std::vector<std::string_view>& args, 
-    const std::string_view& option_name);
-
-std::string_view get_option(
-    const std::vector<std::string_view>& args, 
-    const std::string_view& option_name) ;
-
 int split(std::string strValue, std::string separator, std::vector<std::string>& strArr);
 
-} //namespace wfan
+std::string bytesToHex(uint8_t* bytes, size_t len);
+
+} //namespace hefei

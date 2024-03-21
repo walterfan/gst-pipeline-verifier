@@ -1,6 +1,7 @@
 #include "string_util.h"
+#include <iomanip>
 
-namespace wfan {
+namespace hefei {
 
 bool endswith(const std::string& filename, const std::string& suffix) {
     if (filename.length() >= suffix.length()) {
@@ -251,4 +252,16 @@ int split(std::string strValue, std::string separator, std::vector<std::string>&
     return cnt;
 }
 
-}//namespace wfan
+std::string bytesToHex(uint8_t* bytes, size_t len) {
+    std::stringstream ss;
+
+    // Ensure the output is in uppercase and has two characters for each byte
+    ss << std::uppercase << std::setfill('0');
+    for (size_t i = 0; i < len; ++i) {
+        ss << std::setw(2) << std::hex << static_cast<int>(bytes[i]);
+    }
+
+    return ss.str();
+}
+
+}//namespace hefei

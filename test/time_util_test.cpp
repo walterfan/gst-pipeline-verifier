@@ -6,7 +6,7 @@
 
 using namespace std;
 using namespace testing;
-using namespace wfan;
+using namespace hefei;
 
 //using ::testing::Return;
 //using ::testing::Mock;

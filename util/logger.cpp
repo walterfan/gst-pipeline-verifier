@@ -6,7 +6,7 @@
 using namespace spdlog;
 using namespace sinks;
 
-namespace wfan {
+namespace hefei {
 
 
 Logger& Logger::get_instance()
@@ -123,4 +123,4 @@ void Logger::reset_level(int level, int flush_level, int flush_interval)
     spdlog::flush_every(std::chrono::seconds(flush_interval));
 }
 
-}//namespace wfan
+}//namespace hefei

@@ -4,7 +4,7 @@
 #include <vector>
 #include <map>
 
-namespace wfan {
+namespace hefei {
 
 using config_map_t = std::map<std::string, std::string>;
 using pipeline_config_t = std::map<std::string, std::vector<std::string>>;
@@ -23,4 +23,4 @@ config_map_t read_yaml_section(const std::string& file_path,
 
 int retrieve_files(const char* szFolder, std::vector<std::string>& files);
 
-} //namespace wfan
+} //namespace hefei

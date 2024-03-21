@@ -10,17 +10,19 @@
 #include "file_util.h"
 #include "pipeline_config.h"
 
-namespace wfan {
+namespace hefei {
 
 constexpr auto CONFIG_FOLDER = "./etc";
 constexpr auto CONFIG_FILE = "config.yaml";
 
 class PipelineBuilder {
 public:
+    PipelineBuilder(int argc, char *argv[]);
+    virtual ~PipelineBuilder();
 
     void list_pipelines(const std::string& pipeline_name);
 
-    int init(int argc, char *argv[], const cmd_args_t& args);
+    int init(const std::string& pipeline_name);
     int clean();
     int build();
     int start();
@@ -31,6 +33,7 @@ public:
 
     AppConfig& get_app_config() { return m_app_config; }
     int add_probe(const ProbeConfigItem& probe_config_item);
+
 private:
     int init_gst(int argc, char * argv[]);
     GstElement* create_element(const std::string& factory, const std::string& name);
@@ -46,7 +49,7 @@ private:
     static gboolean on_bus_msg(GstBus* bus, GstMessage* msg, gpointer data);
     static void on_src_pad_added(GstElement* element, GstPad* pad, gpointer data);
     
-    static GstPadProbeReturn probe_data_callback(GstPad *pad, GstPadProbeInfo *info, gpointer user_data);
+    static GstPadProbeReturn probe_pad_callback(GstPad *pad, GstPadProbeInfo *info, gpointer user_data);
 
     void on_bus_msg_eos();
     void on_bus_msg_error(GstMessage* msg);
@@ -75,4 +78,4 @@ private:
     std::atomic<unsigned long> m_probe_count;
 };
 
-} //namespace wfan
+} //namespace hefei

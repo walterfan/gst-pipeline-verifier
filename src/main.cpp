@@ -10,8 +10,9 @@
 #include "string_util.h"
 #include "file_util.h"
 #include "web_console.h"
+#include "command_line_parser.h"
 
-using namespace wfan;
+using namespace hefei;
     
 #define CHECK_VALUE(msg, value, expect)                          \
     do {                                                         \
@@ -30,8 +31,9 @@ constexpr auto USAGE = "-f <config_file> -p <pipeline_name> -d <debug_level> [-l
 
 int verify_pipeline(int argc, char *argv[], void* param=nullptr) {
     
-    const std::vector<std::string_view> args(argv, argv + argc);
-    std::string config_file = std::string(get_option(args, "-f"));
+    CommandLineParser parser(argc, argv);
+
+    std::string config_file = parser.getOptionValue("f");
     if (config_file.empty()) {
         if (file_exists(CONFIG_FILE)) {
             config_file = CONFIG_FILE;
@@ -42,12 +44,14 @@ int verify_pipeline(int argc, char *argv[], void* param=nullptr) {
         }        
     }
     
-    int ret = 0;
-    auto verifier = std::make_unique<PipelineBuilder>();
+    auto pipeline_name = parser.getOptionValue("p");
+    auto web_port = parser.getOptionValue("w");
+    
+    auto verifier = std::make_unique<PipelineBuilder>(argc, argv);
     verifier->read_config_file(config_file.c_str());
 
     GeneralConfig& general_config = verifier->get_app_config().get_general_config();
-    std::string log_level = std::string(get_option(args, "-d"));
+    std::string log_level = parser.getOptionValue("d");
     if (!log_level.empty()) {
         general_config.log_level = std::stoi(log_level);
     }
@@ -57,17 +61,17 @@ int verify_pipeline(int argc, char *argv[], void* param=nullptr) {
     logger.reset_level(general_config.log_level, SPDLOG_LEVEL_ERROR, SPDLOG_FLUSH_SEC);
     
     //handle arguments
-    if (has_option(args, "-v")) {
+    if (parser.hasOption("v")) {
         std::cout << "Version: " << VERSION << std::endl;
         return 0;
     }
 
-    if (has_option(args, "-h")) {
+    if (parser.hasOption("h")) {
         std::cout << "Usage: " << argv[0] << " " << USAGE << std::endl;
         std::cout << "- all arguments are optional" << std::endl;        
         std::cout << "\t-l : list pipelines" << std::endl;        
         std::cout << "\t-h : this screen for usage help" << std::endl;
-        //std::cout << "\t-a : load all config files under ./etc folder" << std::endl;
+        std::cout << "\t-w <http_port>: enable web server on http_port" << std::endl;
         std::cout << "\t-f <config_file> : specify config file, it is ./etc/config.yaml by default" << std::endl;
         std::cout << "\t-p <pipeline_name> : specify a pipeline to start" << std::endl;
         std::cout << "\t-d <log_level> : 0:trace, 1: debug, 2: info ..., default value set by config file" << std::endl;
@@ -78,16 +82,30 @@ int verify_pipeline(int argc, char *argv[], void* param=nullptr) {
         verifier->read_all_config_files(CONFIG_FOLDER);
     }
 
-    if (has_option(args, "-l")) {
-        verifier->list_pipelines(std::string(get_option(args, "-p")));
+    if (parser.hasOption("l")) {
+        verifier->list_pipelines(pipeline_name);
         return 0;
     }
 
-    std::thread serverThread([&]{
-        start_web_server(general_config.web_root.c_str(), general_config.http_port);
-    });
+    if (parser.hasOption("w")) {
+        general_config.http_enabled = 1;
+    }
+    std::unique_ptr<std::thread> thptr;
+    if (general_config.http_enabled) {
+        thptr = std::make_unique<std::thread>([&]{
+            int http_port = -1;
+            if (!web_port.empty()) {
+                http_port = str_to_int(web_port);
+            }
+            if (http_port < 0) {
+                http_port = general_config.http_port;
+            }
+            ILOG("start web server on {}", http_port);
+            start_web_server(general_config.web_root.c_str(), http_port);
+        });
+    }
 
-    ret = verifier->init(argc, argv, args);
+    int ret = verifier->init(pipeline_name);
     CHECK_VALUE("pipeline init, ret={}",  ret, 0);
     ret = verifier->build();
     CHECK_VALUE("pipeline build, ret={}", ret, 0);
@@ -98,7 +116,10 @@ int verify_pipeline(int argc, char *argv[], void* param=nullptr) {
     ret = verifier->clean();
     CHECK_VALUE("pipeline clean, ret={}", ret, 0);
 
-    serverThread.join();
+    if (thptr) {
+        thptr->join();
+    }
+    
 
     return ret;
 }

@@ -22,7 +22,7 @@
 #include <memory>
 #include <map>
 
-namespace wfan {
+namespace hefei {
 
 struct LogConfig {
     // log_level: trace=0, debug=2, info=2, ...
@@ -60,6 +60,6 @@ private:
 #define WLOG(...) SPDLOG_LOGGER_WARN(Logger::get_instance().get_logger(), __VA_ARGS__)
 #define ELOG(...) SPDLOG_LOGGER_ERROR(Logger::get_instance().get_logger(), __VA_ARGS__)
 
-} //namespace wfan
+} //namespace hefei
 
 

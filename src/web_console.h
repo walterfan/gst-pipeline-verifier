@@ -2,7 +2,7 @@
 #include <cstdio>
 #include "CivetServer.h"
 
-namespace wfan {
+namespace hefei {
 
 class TestHandler : public CivetHandler {
 public:
@@ -22,4 +22,4 @@ public:
 int start_web_server(const char *doc_root, int port = 8080);
 
 
-}//namespace wfan
+}//namespace hefei

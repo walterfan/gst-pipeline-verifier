@@ -6,6 +6,7 @@ general:
   log_level: 1
   # gstreamer log level - GST_LEVEL_FIXME=3,GST_LEVEL_INFO=4,..
   debug_threshold: 3 
+  http_enabled: 0
   http_port: 9988
   web_root: ./doc
 pipelines:
