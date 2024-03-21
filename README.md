@@ -147,7 +147,8 @@ gst-launch-1.0 -vv filesrc location=material/talk.mp4 \
 ```
 
 
-## build source code
+## build source code by cmake
+* install dependent libraries
 
 ```sh
 sudo apt-get install -y \
@@ -166,7 +167,22 @@ libyaml-cpp-dev \
 libgtest-dev \
 libsoup2.4-dev \
 libjson-glib-dev
+```
 
+* install civetweb 
+(refer to https://github.com/civetweb/civetweb/blob/master/docs/Installing.md)
+
+```sh
+wget https://github.com/civetweb/civetweb/archive/refs/tags/v1.16.tar.gz
+tar xvfz v1.16.tar.gz
+cd civetweb-1.16
+make
+make install
+```
+
+* build source code
+
+```sh
 mkdir -p build
 cd build
 cmake ..
@@ -185,6 +201,7 @@ cd vcpkg
 ./vcpkg install spdlog
 ./vcpkg install fmt
 ./vcpkg install yaml-cpp
+./vcpkg install civetweb
 ```
 
 * build with dependencies by vcpkg

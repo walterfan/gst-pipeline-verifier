@@ -63,4 +63,8 @@ void log_handler(const gchar *log_domain,
 
 std::string get_pad_name_from_link_tag(const std::string& link_tag);
 
+bool is_probe_event(GstPadProbeInfo *info);
+bool is_probe_query(GstPadProbeInfo *info);
+bool is_probe_buffer(GstPadProbeInfo *info);
+
 } //namespace wfan

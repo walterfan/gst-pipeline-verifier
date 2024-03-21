@@ -31,12 +31,17 @@ endif()
 find_package(fmt CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(yaml-cpp CONFIG REQUIRED)
+find_package(civetweb CONFIG REQUIRED)
 
 if(NOT spdlog_FOUND)
     message(WARNING "spdlog not found!")
 else()
     message(STATUS "Found spdlog on: " ${spdlog_DIR})
 endif(NOT spdlog_FOUND)
+
+if(civetweb_FOUND)
+    message(INFO "civetweb found!")
+endif(civetweb_FOUND)
 
 include_directories(${PROJECT_SOURCE_DIR})
 include_directories(${PROJECT_SOURCE_DIR}/util)

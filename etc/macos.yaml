@@ -28,3 +28,17 @@
       - capsfilter caps="video/x-raw, width=1920, height=1080, framerate=30/1"
       - clockoverlay
       - autovideosink
+
+    mac_hls_record:
+      - avfvideosrc device-index=1 
+      - capsfilter caps="video/x-raw, width=1920, height=1080, framerate=30/1"
+      - videoconvert
+      - capsfilter caps="video/x-raw(memory:NVMM),format=I420,width=1920,height=1080,framerate=30/1"
+      - tee name=t t. 
+      - queue
+      - openh264enc
+      - h264parse
+      - hlssink2 max-files=10 location=/tmp/hls_record_%03d.ts playlist-location=/tmp/hls_playlist.m3u8 target-duration=10 t.
+      - queue
+      - autovideosink    
+    

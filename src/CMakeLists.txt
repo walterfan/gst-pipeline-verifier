@@ -1,6 +1,7 @@
 
 add_executable(gst-pipeline-verify 
-    gst_pipeline_verify.cpp
+    main.cpp
+    web_console.cpp
     pipeline_builder.cpp 
     pipeline_config.cpp
 )
@@ -10,5 +11,6 @@ target_link_libraries(gst-pipeline-verify
     common_util
     fmt::fmt 
     spdlog::spdlog
-    yaml-cpp
+    yaml-cpp::yaml-cpp
+    civetweb::civetweb-cpp
 )

@@ -117,6 +117,15 @@ int str_to_int(const std::string& s) {
     return -1;
 }
 
+std::string int_to_binary(int n) {
+    std::bitset<sizeof(int) * 8> binary(n);
+    return binary.to_string();
+}
+
+int binary_to_int(const std::string& binary_str) {
+    return std::stoi(binary_str, nullptr, 2);
+}
+
 std::string trim(const std::string& str, const std::string& whitespace)
 {
     std::string::size_type strBegin = str.find_first_not_of(whitespace);

@@ -232,4 +232,21 @@ std::string get_pad_name_from_link_tag(const std::string& link_tag) {
   return link_tag.substr(pos + 1, std::string::npos);
 }
 
+bool is_probe_event(GstPadProbeInfo *info) {
+  return GST_PAD_PROBE_TYPE_EVENT_DOWNSTREAM & info->type 
+    || GST_PAD_PROBE_TYPE_EVENT_UPSTREAM & info->type;
+}
+
+bool is_probe_query(GstPadProbeInfo *info) {
+  return GST_PAD_PROBE_TYPE_QUERY_DOWNSTREAM & info->type 
+    || GST_PAD_PROBE_TYPE_QUERY_UPSTREAM & info->type;
+}
+
+bool is_probe_buffer(GstPadProbeInfo *info) {
+  return GST_PAD_PROBE_TYPE_BUFFER & info->type 
+    || GST_PAD_PROBE_TYPE_BUFFER_LIST & info->type;
+}
+
+
+
 }//namespace wfan

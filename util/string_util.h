@@ -33,6 +33,10 @@ bool is_number(const std::string& s);
 
 int str_to_int(const std::string& s);
 
+std::string int_to_binary(int n);
+
+int binary_to_int(const std::string& binary_str);
+
 int find_closed_smaller_value(std::vector<std::string>& numbers, const std::string& target);
 
 int find_closed_bigger_value(std::vector<std::string>& numbers, const std::string& target);

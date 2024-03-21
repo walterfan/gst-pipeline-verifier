@@ -9,6 +9,7 @@
 #include "logger.h"
 #include "string_util.h"
 #include "file_util.h"
+#include "web_console.h"
 
 using namespace wfan;
     
@@ -45,16 +46,15 @@ int verify_pipeline(int argc, char *argv[], void* param=nullptr) {
     auto verifier = std::make_unique<PipelineBuilder>();
     verifier->read_config_file(config_file.c_str());
 
-    //Logger::get_instance().load_config(config_file);
-    GeneralConfig& logConfig = verifier->get_app_config().get_general_config();
+    GeneralConfig& general_config = verifier->get_app_config().get_general_config();
     std::string log_level = std::string(get_option(args, "-d"));
     if (!log_level.empty()) {
-        logConfig.log_level = std::stoi(log_level);
+        general_config.log_level = std::stoi(log_level);
     }
     //init logger
     auto& logger = Logger::get_instance();
-    logger.init(logConfig.log_folder, logConfig.log_name, 20, 20);
-    logger.reset_level(logConfig.log_level, SPDLOG_LEVEL_ERROR, SPDLOG_FLUSH_SEC);
+    logger.init(general_config.log_folder, general_config.log_name, 20, 20);
+    logger.reset_level(general_config.log_level, SPDLOG_LEVEL_ERROR, SPDLOG_FLUSH_SEC);
     
     //handle arguments
     if (has_option(args, "-v")) {
@@ -67,16 +67,14 @@ int verify_pipeline(int argc, char *argv[], void* param=nullptr) {
         std::cout << "- all arguments are optional" << std::endl;        
         std::cout << "\t-l : list pipelines" << std::endl;        
         std::cout << "\t-h : this screen for usage help" << std::endl;
-        std::cout << "\t-a : load all config files under ./etc folder" << std::endl;
+        //std::cout << "\t-a : load all config files under ./etc folder" << std::endl;
         std::cout << "\t-f <config_file> : specify config file, it is ./etc/config.yaml by default" << std::endl;
         std::cout << "\t-p <pipeline_name> : specify a pipeline to start" << std::endl;
         std::cout << "\t-d <log_level> : 0:trace, 1: debug, 2: info ..., default value set by config file" << std::endl;
         return 0;
     }
 
-    
-
-    if (has_option(args, "-a")) {
+    if (directory_exists(CONFIG_FOLDER)) {
         verifier->read_all_config_files(CONFIG_FOLDER);
     }
 
@@ -84,6 +82,10 @@ int verify_pipeline(int argc, char *argv[], void* param=nullptr) {
         verifier->list_pipelines(std::string(get_option(args, "-p")));
         return 0;
     }
+
+    std::thread serverThread([&]{
+        start_web_server(general_config.web_root.c_str(), general_config.http_port);
+    });
 
     ret = verifier->init(argc, argv, args);
     CHECK_VALUE("pipeline init, ret={}",  ret, 0);
@@ -95,6 +97,9 @@ int verify_pipeline(int argc, char *argv[], void* param=nullptr) {
     CHECK_VALUE("pipeline stop, ret={}",  ret, 0);
     ret = verifier->clean();
     CHECK_VALUE("pipeline clean, ret={}", ret, 0);
+
+    serverThread.join();
+
     return ret;
 }
 

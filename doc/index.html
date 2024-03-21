@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GStreamer Pipeline Verifier</title>
+  <!-- Bootstrap CSS from a CDN accessible from China -->
+  <link rel="stylesheet" href="https://cdn.bootcss.com/twitter-bootstrap/4.5.2/css/bootstrap.min.css">
+  <style>
+    body {
+      background-color: #f8f9fa;
+    }
+    .jumbotron {
+      background-color: #343a40;
+      color: #ffffff;
+    }
+    .card {
+      margin-bottom: 20px;
+    }
+    .quote-container {
+      margin-top: 50px;
+      text-align: center;
+    }
+    .quote-text {
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="jumbotron text-center">
+    <h1>GStreamer Pipeline Verifier v1.0</h1>
+    <div>API: <a href="/test"> Test </a>, <a href="/exit"> Exit </a> </div>
+  </div>
+
+  <div class="container">
+
+    <div class="container quote-container">
+      <blockquote class="quote-text">
+        "The only way to do great work is to love what you do."
+        <footer class="blockquote-footer">Steve Jobs</footer>
+      </blockquote>
+    </div>
+
+    
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Pipeline</th>
+          <th>Tags</th>
+          <th>Content</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td>mp4_play</td>
+          <td>video</td>
+          <td>
+            gst-launch-1.0 -ev filesrc location=./material/talk.mp4
+  ! decodebin name=dec
+  ! videoconvert
+  ! timeoverlay
+  ! autovideosink dec.
+  ! audioconvert
+  ! audioresample
+  ! autoaudiosink
+          </td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>wav_scope_to_rtmp</td>
+          <td>audio</td>
+          <td>
+            gst-launch-1.0 -ev alsasrc device=hw:3,0
+            ! audioconvert
+            ! wavescope
+            ! queue
+            ! videoconvert
+            ! x264enc
+            ! flvmux streamable=true
+            ! queue
+            ! rtmpsink location="rtmp://localhost:1935/live/wavetest"</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>video_pipeline_test</td>
+          <td>video</td>
+          <td>gst-launch-1.0 -ev videotestsrc num-buffers=100
+            ! capsfilter caps="video/x-raw, width=1920, height=1080, framerate=30/1"
+            ! autovideosink</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td>audio_record_wavescope</td>
+          <td>audio</td>
+          <td>gst-launch-1.0 -ev osxaudiosrc
+            ! audioconvert
+            ! audioresample
+            ! capsfilter caps="audio/x-raw,format=S16LE,channels=1,rate=16000,layout=interleaved"
+            ! tee
+            ! queue
+            ! splitmuxsink location=test_%5d.wav muxer=wavenc
+            ! tee
+            ! queue
+            ! wavescope
+            ! videoconvert
+            ! autovideosink</td>
+        </tr>
+      </tbody>
+    </table>  
+
+    <footer class="container quote-container">
+      <hr/>
+      <p>&copy; 2010 ~ 2030  Walter Fan </p>
+    </footer>
+
+  </div> <!-- container div end -->
+
+
+  <!-- Bootstrap JS and dependencies -->
+  <script src="https://cdn.bootcss.com/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://cdn.bootcss.com/popper.js/1.16.0/umd/popper.min.js"></script>
+  <script src="https://cdn.bootcss.com/twitter-bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

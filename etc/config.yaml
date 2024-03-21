@@ -6,6 +6,8 @@ general:
   log_level: 1
   # gstreamer log level - GST_LEVEL_FIXME=3,GST_LEVEL_INFO=4,..
   debug_threshold: 3 
+  http_port: 9988
+  web_root: ./doc
 pipelines:
   pipeline_test:
     - videotestsrc num-buffers=100
@@ -76,5 +78,5 @@ probes:
     probe_pipeline: mp4_play
     probe_element: timeoverlay
     probe_pad: src 
-    #GST_PAD_PROBE_TYPE_BUFFER (16) – probe buffers
-    probe_type: 16
+    #GST_PAD_PROBE_TYPE_ALL_BOTH (1776) – probe buffers
+    probe_type: 1776

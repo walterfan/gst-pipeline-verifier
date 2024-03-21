@@ -45,11 +45,14 @@ struct PipelineConfig {
 };
 
 struct GeneralConfig {
+
+    int http_port = 9988;
     int debug_threshold = 3;
-    int log_level = 2;    
+    int log_level = 2; 
     std::string log_folder;
     std::string log_name;
     std::string default_pipeline;
+    std::string web_root = "./doc";
 };
 
 

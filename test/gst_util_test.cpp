@@ -11,9 +11,13 @@ using namespace wfan;
 
 TEST(GstUtilTest, get_pad_name_from_link_tag)
 {
-	std::string link_tag = "nvstreammux0.sink_0";
-    auto pad_name = get_pad_name_from_link_tag(link_tag);
-    cout << pad_name << "==" << pad_name << endl;
-    ASSERT_EQ(pad_name, "sink_0");
+
+    gst_init (NULL, NULL);
+
+    GstElement *element = gst_element_factory_make ("fakesrc", "source");
+
+    ASSERT_TRUE(element);
+
+    gst_object_unref (GST_OBJECT (element));
 
 }

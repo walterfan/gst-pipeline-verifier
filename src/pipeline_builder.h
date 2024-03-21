@@ -45,7 +45,8 @@ private:
 
     static gboolean on_bus_msg(GstBus* bus, GstMessage* msg, gpointer data);
     static void on_src_pad_added(GstElement* element, GstPad* pad, gpointer data);
-    static GstPadProbeReturn static_probe_callback(GstPad *pad, GstPadProbeInfo *info, gpointer user_data);
+    
+    static GstPadProbeReturn probe_data_callback(GstPad *pad, GstPadProbeInfo *info, gpointer user_data);
 
     void on_bus_msg_eos();
     void on_bus_msg_error(GstMessage* msg);

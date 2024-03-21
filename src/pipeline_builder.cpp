@@ -18,6 +18,8 @@ constexpr auto KEY_LOG_FOLDER = "log_folder";
 constexpr auto KEY_LOG_NAME   = "log_name";
 constexpr auto KEY_LOG_LEVEL  = "log_level";
 constexpr auto KEY_DEBUG_THRESHOLD  = "debug_threshold";
+constexpr auto KEY_HTTP_PORT  = "http_port";
+constexpr auto KEY_WEB_ROOT  = "web_root";
 
 namespace wfan {
 
@@ -70,6 +72,9 @@ int PipelineBuilder::read_config_file(const char* szFile) {
 
         m_app_config.get_general_config().debug_threshold = str_to_int(config_map[KEY_DEBUG_THRESHOLD]);
         m_app_config.get_general_config().default_pipeline = config_map[KEY_DEFAULT_PIPELINE];
+    
+        m_app_config.get_general_config().http_port = str_to_int(config_map[KEY_HTTP_PORT]);
+        m_app_config.get_general_config().web_root = config_map[KEY_WEB_ROOT];
     }
 
     if (config[KEY_PROBES]) {
@@ -86,8 +91,6 @@ int PipelineBuilder::read_config_file(const char* szFile) {
             m_app_config.get_probe_config().add_probe_config_item(probeConfigItem);     
         }
     }
-
-    
 
     return 0;
 }
@@ -135,10 +138,6 @@ int PipelineBuilder::init(int argc, char *argv[], const cmd_args_t& args) {
     if (m_pipeline_config.empty()) {
         ELOG("PipelineBuilder init not read pipeline yaml: {} ", m_config_file);
         return -1;
-    }
-
-    if (directory_exists(CONFIG_FOLDER)) {
-        read_all_config_files(CONFIG_FOLDER);
     }
 
     m_pipeline_name = get_option(args, "-p");
@@ -631,19 +630,30 @@ void PipelineBuilder::on_bus_msg_buffering_stats(GstMessage* msg) {
          GST_OBJECT_NAME(msg->src), (int)mode, avg_in, avg_out, buffering_left);
 }
 
-GstPadProbeReturn PipelineBuilder::static_probe_callback(GstPad *pad, GstPadProbeInfo *info, gpointer user_data) {
+    GstPadProbeReturn PipelineBuilder::probe_data_callback(GstPad *pad, GstPadProbeInfo *info, gpointer user_data)
+    {
 
-    PipelineBuilder* thiz = (PipelineBuilder*) user_data;
-    if (thiz) {
-        thiz->m_probe_count++;
-        if (thiz->m_probe_count < 10) {
-            DLOG("probe callback: {}. pad name={}, direction={}, type={}", 
-                thiz->m_probe_count.load(), GST_PAD_NAME(pad), (int)GST_PAD_DIRECTION(pad), (int)info->type);    
-        }        
+        PipelineBuilder *thiz = (PipelineBuilder *)user_data;
+        if (thiz)
+        {
+            thiz->m_probe_count++;
+            if (thiz->m_probe_count)
+            {
+                DLOG("probe callback: {}. pad name={}, direction={}, type={}({})",
+                     thiz->m_probe_count.load(), GST_PAD_NAME(pad), (int)GST_PAD_DIRECTION(pad),
+                     (int)info->type, int_to_binary(info->type));
+                if (GST_PAD_PROBE_TYPE_BUFFER & info->type)
+                {
+                }
+                if (thiz->m_probe_count.load() > 10)
+                {
+                    return GST_PAD_PROBE_REMOVE;
+                }
+            }
+        }
+
+        return GST_PAD_PROBE_OK;
     }
-
-    return GST_PAD_PROBE_OK;
-}
 
 int PipelineBuilder::add_probe(const ProbeConfigItem& probe_config_item) {
     DLOG("Add probe for {}'{}, pad name={}", 
@@ -663,10 +673,11 @@ int PipelineBuilder::add_probe(const ProbeConfigItem& probe_config_item) {
 
     gulong probe_id = gst_pad_add_probe(probe_pad,
                 (GstPadProbeType)probe_config_item.probe_type, 
-                static_probe_callback, this, NULL);
+                probe_data_callback, this, NULL);
         gst_object_unref(probe_pad);
     
     DLOG("Add probe probe_id={}", probe_id);
+    return 0;
 }
 
 } //namespace wfan
