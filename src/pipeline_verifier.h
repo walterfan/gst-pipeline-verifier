@@ -10,20 +10,26 @@ public:
     PipelineVerifier(int argc, char *argv[]);
     virtual ~PipelineVerifier();
 
-    int init();
+    int init(const std::string& log_level);
 
     AppConfig &get_app_config() { return m_app_config; }
 
-    int read_config_file(const char *szFile);
+    int read_config_file(const std::string config_file);
 
     int read_all_config_files(const char *szFolder);
 
     void list_pipelines(const std::string &pipeline_name);
 
-private : 
+    void fork_web_server(int http_port, bool forced);
+
+    void join_web_server();
+
+private:
+    int start_web_server(const char *doc_root, int port);
+
     std::string m_config_file;
     AppConfig m_app_config;
-    
+    std::unique_ptr<std::thread> m_thptr;
 };
 
 }// namespace hefei

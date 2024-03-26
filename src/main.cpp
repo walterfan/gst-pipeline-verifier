@@ -24,7 +24,7 @@ using namespace hefei;
         }                                                        \
     } while (0)
 
-constexpr auto SPDLOG_FLUSH_SEC = 3;
+
 constexpr auto log_pattern = "[%Y-%m-%d %H:%M:%S.%e] [%n] [%l] [%t] [%s:%#] (%!) %v";
 constexpr auto VERSION = "1.0.0";
 constexpr auto USAGE = "-f <config_file> -p <pipeline_name> -d <debug_level> [-l -h -v -a]";
@@ -34,32 +34,12 @@ int verify_pipeline(int argc, char *argv[], void* param=nullptr) {
     CommandLineParser parser(argc, argv);
 
     std::string config_file = parser.getOptionValue("f");
-    if (config_file.empty()) {
-        if (file_exists(CONFIG_FILE)) {
-            config_file = CONFIG_FILE;
-        } else {
-            config_file = CONFIG_FOLDER;
-            config_file.append("/");
-            config_file.append(CONFIG_FILE);
-        }        
-    }
-    
     auto pipeline_name = parser.getOptionValue("p");
-    auto web_port = parser.getOptionValue("w");
     
     auto verifier = std::make_unique<PipelineVerifier>(argc, argv);
-    verifier->read_config_file(config_file.c_str());
+    verifier->read_config_file(config_file);
+    verifier->init(parser.getOptionValue("d"));
 
-    GeneralConfig& general_config = verifier->get_app_config().get_general_config();
-    std::string log_level = parser.getOptionValue("d");
-    if (!log_level.empty()) {
-        general_config.log_level = std::stoi(log_level);
-    }
-    //init logger
-    auto& logger = Logger::get_instance();
-    logger.init(general_config.log_folder, general_config.log_name, 20, 20);
-    logger.reset_level(general_config.log_level, SPDLOG_LEVEL_ERROR, SPDLOG_FLUSH_SEC);
-    
     //handle arguments
     if (parser.hasOption("v")) {
         std::cout << "Version: " << VERSION << std::endl;
@@ -78,32 +58,15 @@ int verify_pipeline(int argc, char *argv[], void* param=nullptr) {
         return 0;
     }
 
-    if (directory_exists(CONFIG_FOLDER)) {
-        verifier->read_all_config_files(CONFIG_FOLDER);
-    }
-
     if (parser.hasOption("l")) {
         verifier->list_pipelines(pipeline_name);
         return 0;
     }
 
-    if (parser.hasOption("w")) {
-        general_config.http_enabled = 1;
-    }
-    std::unique_ptr<std::thread> thptr;
-    if (general_config.http_enabled) {
-        thptr = std::make_unique<std::thread>([&]{
-            int http_port = -1;
-            if (!web_port.empty()) {
-                http_port = str_to_int(web_port);
-            }
-            if (http_port < 0) {
-                http_port = general_config.http_port;
-            }
-            ILOG("start web server on {}", http_port);
-            start_web_server(general_config.web_root.c_str(), http_port);
-        });
-    }
+    auto web_port = parser.getOptionValue("w");
+    ILOG("web port = {}", web_port);
+    verifier->fork_web_server(str_to_int(web_port), parser.hasOption("w"));
+
     auto builder = std::make_shared<PipelineBuilder>(verifier->get_app_config());
     int ret = builder->init(pipeline_name);
     CHECK_VALUE("pipeline init, ret={}",  ret, 0);
@@ -114,12 +77,7 @@ int verify_pipeline(int argc, char *argv[], void* param=nullptr) {
     ret = builder->stop();
     CHECK_VALUE("pipeline stop, ret={}",  ret, 0);
     ret = builder->clean();
-    CHECK_VALUE("pipeline clean, ret={}", ret, 0);
-
-    if (thptr) {
-        thptr->join();
-    }
-    
+    CHECK_VALUE("pipeline clean, ret={}", ret, 0);    
 
     return ret;
 }

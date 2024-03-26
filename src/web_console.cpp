@@ -81,31 +81,4 @@ bool ExitHandler::handleGet(CivetServer *server, struct mg_connection *conn)
     return true;
 }
 
-int start_web_server(const char *doc_root, int port)
-{
-    char szPort[10]; 
-    snprintf(szPort, sizeof(szPort), "%d", port);
-
-    const char * options[] = {"document_root", doc_root, 
-        "listening_ports", szPort, NULL};
-    CivetServer server(options);
-
-    TestHandler handler;
-    server.addHandler("/test", handler);
-
-    ExitHandler exit_handler;
-	server.addHandler("/exit", exit_handler);
-
-    printf("Server started on port %d\n", port);
-    while (! exit_handler.exit_now()) {
-        #ifdef _WIN32
-            Sleep(1000);
-        #else
-            sleep(1);
-        #endif
-    }
-
-    return 0;
-}
-
 }//namespace hefei
