@@ -242,7 +242,7 @@ int PipelineVerifier::start_web_server(const char *doc_root, int port)
     ExitHandler exit_handler;
     server.addHandler("/exit", exit_handler);
 
-    ILOG("Server started on port {} for {}", port, doc_root);
+    ILOG("web server started on port {} for {}", port, doc_root);
     while (!exit_handler.exit_now())
     {
 #ifdef _WIN32
