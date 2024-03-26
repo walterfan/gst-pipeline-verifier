@@ -76,11 +76,13 @@ class AppConfig {
 public:
     GeneralConfig& get_general_config() { return m_general_config; };
     ProbeConfig& get_probe_config()  { return m_probe_config; };
+    pipeline_config_t &get_pipeline_config() { return m_pipeline_config; }
     bool has_probe_config_item(const std::string& item_name) { return m_probe_config.has_probe_config_item(item_name); }
     ProbeConfigItem& get_probe_config_item(const std::string& item)  { return m_probe_config.get_probe_config_item(item); };
 private:
     GeneralConfig m_general_config;
     ProbeConfig m_probe_config;
+    pipeline_config_t m_pipeline_config;
 };
 
 }//namespace hefei

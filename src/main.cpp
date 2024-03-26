@@ -4,7 +4,7 @@
 #ifdef __APPLE__
 #include <TargetConditionals.h>
 #endif
-
+#include "pipeline_verifier.h"
 #include "pipeline_builder.h"
 #include "logger.h"
 #include "string_util.h"
@@ -47,7 +47,7 @@ int verify_pipeline(int argc, char *argv[], void* param=nullptr) {
     auto pipeline_name = parser.getOptionValue("p");
     auto web_port = parser.getOptionValue("w");
     
-    auto verifier = std::make_unique<PipelineBuilder>(argc, argv);
+    auto verifier = std::make_unique<PipelineVerifier>(argc, argv);
     verifier->read_config_file(config_file.c_str());
 
     GeneralConfig& general_config = verifier->get_app_config().get_general_config();
@@ -104,16 +104,16 @@ int verify_pipeline(int argc, char *argv[], void* param=nullptr) {
             start_web_server(general_config.web_root.c_str(), http_port);
         });
     }
-
-    int ret = verifier->init(pipeline_name);
+    auto builder = std::make_shared<PipelineBuilder>(verifier->get_app_config());
+    int ret = builder->init(pipeline_name);
     CHECK_VALUE("pipeline init, ret={}",  ret, 0);
-    ret = verifier->build();
+    ret = builder->build();
     CHECK_VALUE("pipeline build, ret={}", ret, 0);
-    ret = verifier->start();
+    ret = builder->start();
     CHECK_VALUE("pipeline start, ret={}", ret, 0);
-    ret = verifier->stop();
+    ret = builder->stop();
     CHECK_VALUE("pipeline stop, ret={}",  ret, 0);
-    ret = verifier->clean();
+    ret = builder->clean();
     CHECK_VALUE("pipeline clean, ret={}", ret, 0);
 
     if (thptr) {

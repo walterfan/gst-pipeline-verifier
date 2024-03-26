@@ -117,10 +117,22 @@ int str_to_int(const std::string& s) {
     if(is_number(s)) return stoi(s);
     return -1;
 }
-
+/*
 std::string int_to_binary(int n) {
     std::bitset<sizeof(int) * 8> binary(n);
     return binary.to_string();
+}
+*/
+
+std::string int_to_binary(int n) {
+  std::string binary;
+  
+  while (n > 0) {
+    binary = std::to_string(n % 2) + binary; 
+    n = n / 2;
+  }
+  
+  return binary;
 }
 
 int binary_to_int(const std::string& binary_str) {

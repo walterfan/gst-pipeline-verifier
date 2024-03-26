@@ -6,6 +6,7 @@
 #include <thread>
 #include <vector>
 #include <map>
+#include <atomic>
 #include "string_util.h"
 #include "file_util.h"
 #include "pipeline_config.h"
@@ -15,21 +16,26 @@ namespace hefei {
 constexpr auto CONFIG_FOLDER = "./etc";
 constexpr auto CONFIG_FILE = "config.yaml";
 
+enum class BuildProgress {
+    NOT_STARTED = 0,
+    MADE_ELEMENTS,
+    ADDED_ELEMENTS,
+    LINKED_ELEMENTS,
+    UNLINKED_ELEMENTS,
+    REMOVED_ELEMENTS,
+    RELEASED_ELEMENTS
+};
+
 class PipelineBuilder {
 public:
-    PipelineBuilder(int argc, char *argv[]);
+    PipelineBuilder(AppConfig& appConfig);
     virtual ~PipelineBuilder();
-
-    void list_pipelines(const std::string& pipeline_name);
 
     int init(const std::string& pipeline_name);
     int clean();
     int build();
     int start();
     int stop();
-
-    int read_config_file(const char* szFile);
-    int read_all_config_files(const char* szFolder);
 
     AppConfig& get_app_config() { return m_app_config; }
     int add_probe(const ProbeConfigItem& probe_config_item);
@@ -46,6 +52,8 @@ private:
     bool link_elements();
     bool unlink_elements();
 
+    void update_build_progress(BuildProgress progress);
+
     static gboolean on_bus_msg(GstBus* bus, GstMessage* msg, gpointer data);
     static void on_src_pad_added(GstElement* element, GstPad* pad, gpointer data);
     
@@ -60,9 +68,6 @@ private:
     void on_bus_msg_qos(GstMessage* msg);
     void on_bus_msg_buffering_stats(GstMessage* msg);
 
-    std::string m_config_file;
-    AppConfig m_app_config;
-    pipeline_config_t m_pipeline_config;
     std::map<std::string, GstElement*> m_elements;
 
     GstBus* m_bus;
@@ -70,12 +75,14 @@ private:
     GstElement* m_pipeline;
     
     std::string m_pipeline_name;
-    std::shared_ptr<PipelineConfig> m_pipelie_config;
+    std::shared_ptr<PipelineConfig> m_pipeline_config;
 
     std::vector<std::pair<GstElement*, GstElement*>> m_linked_elements;
     std::vector<std::pair<GstPad*, GstPad*>> m_linked_pads;
 
     std::atomic<unsigned long> m_probe_count;
+    BuildProgress m_build_progress;
+    AppConfig m_app_config;
 };
 
 } //namespace hefei
