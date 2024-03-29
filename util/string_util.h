@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <sstream>
 #include <vector>
+#include <map>
 #include <sstream>
 
 namespace hefei {
@@ -65,8 +66,14 @@ static inline std::string trim_copy(std::string s) {
     return s;
 }
 
-int split(std::string strValue, std::string separator, std::vector<std::string>& strArr);
+int split(const std::string& strValue, const std::string& separator, std::vector<std::string>& strArr);
+
+int split(const std::string& strValue, const std::string& separator, std::pair<std::string, std::string> &pair);
+
+int split(const std::string &strValue, const std::string &sep1, const std::string &sep2, std::map<std::string, std::string> &strMap);
 
 std::string bytesToHex(uint8_t* bytes, size_t len);
+
+int replace_variables(std::string &desc, std::map<std::string, std::string> &var_map);
 
 } //namespace hefei

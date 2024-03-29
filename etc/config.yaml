@@ -64,7 +64,7 @@ pipelines:
     - rtmpsink location=rtmp://localhost:1935/live/video_test
 
   audio2rtmp:
-    - alsasrc device=hw:3,0 
+    - alsasrc device=hw:2,0 
     - audioconvert 
     - wavescope 
     - queue
@@ -81,3 +81,7 @@ probes:
     probe_pad: src 
     #GST_PAD_PROBE_TYPE_ALL_BOTH (1776) – probe buffers
     probe_type: 1776
+explain:
+  mp4_play:
+    tags: video, mp4
+    desc: playback mp4 video file

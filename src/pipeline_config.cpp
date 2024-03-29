@@ -95,10 +95,7 @@ void ElementConfig::parse_desc(const std::string& desc) {
 PipelineConfig::PipelineConfig(std::string name, std::vector<std::string> elements)
 : m_name(name)
 , m_elements_desc(elements) {
-    DLOG("create pipeline {}", m_name);
-    for(auto& desc: m_elements_desc) {
-        m_elements_config.push_back(std::make_shared<ElementConfig>(desc));
-    }
+    DLOG("create pipeline {}", m_name);   
 }
 
 std::shared_ptr<ElementConfig> PipelineConfig::get_element_config(const std::string& name) {
@@ -110,37 +107,60 @@ std::shared_ptr<ElementConfig> PipelineConfig::get_element_config(const std::str
     return nullptr;
 }
 
-int PipelineConfig::check_elements_name() {
+
+int PipelineConfig::init(const std::string &variables)
+{
+    std::map<std::string, std::string> var_map;
+    int count = split(variables, ",", "=", var_map);
+
+    for (std::string &desc : m_elements_desc)
+    {
+        if (count > 0) {
+            replace_variables(desc, var_map);
+        }
+        m_elements_config.push_back(std::make_shared<ElementConfig>(desc));
+    }
+    return 0;
+}
+
+int PipelineConfig::check_elements_name()
+{
     size_t count = m_elements_config.size();
-    
+
     size_t i = 0, j = 0;
 
-    for(; i < count - 1; ++i) {
-        auto& ele_cfg_ptr = m_elements_config[i];
-        auto& element_name = ele_cfg_ptr->m_name;
+    for (; i < count - 1; ++i)
+    {
+        auto &ele_cfg_ptr = m_elements_config[i];
+        auto &element_name = ele_cfg_ptr->m_name;
         size_t index = 0;
-        for (j = i + 1; j < count; ++j) {
-            auto& next_ptr = m_elements_config[j];
-            auto& next_name = next_ptr->m_name;
-            if (next_name == element_name) {
+        for (j = i + 1; j < count; ++j)
+        {
+            auto &next_ptr = m_elements_config[j];
+            auto &next_name = next_ptr->m_name;
+            if (next_name == element_name)
+            {
                 next_name = element_name + std::to_string(++index);
                 DLOG("{} rename to {}", element_name, next_name);
-            }            
+            }
         }
     }
     return 0;
 }
 
-bool ProbeConfig::has_probe_config_item(const std::string& item_name) {
+bool ProbeConfig::has_probe_config_item(const std::string &item_name)
+{
     return config_items.find(item_name) != config_items.end();
 }
 
-ProbeConfigItem& ProbeConfig::get_probe_config_item(const std::string& item_name) {
+ProbeConfigItem &ProbeConfig::get_probe_config_item(const std::string &item_name)
+{
     return config_items[item_name];
 }
 
-void ProbeConfig::add_probe_config_item(const ProbeConfigItem& probeConfigItem) {
+void ProbeConfig::add_probe_config_item(const ProbeConfigItem &probeConfigItem)
+{
     config_items[probeConfigItem.probe_pipeline_name] = probeConfigItem;
 }
 
-} //namespace hefei
+} // namespace hefei

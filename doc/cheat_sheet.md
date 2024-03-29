@@ -37,6 +37,14 @@ The different probing types that can occur. When either one of GST_PAD_PROBE_TYP
 * GST_PAD_PROBE_TYPE_SCHEDULING (12288) – probe push and pull
 
 
+## GstPadPresence 
+Indicates when this pad will become available.
+
+### Members
+* GST_PAD_ALWAYS (0) – the pad is always available
+* GST_PAD_SOMETIMES (1) – the pad will become available depending on the media stream
+* GST_PAD_REQUEST (2) – the pad is only available on request with gst_element_request_pad.
+
 ## GstPadProbeReturn 
 Different return values for the GstPadProbeCallback.
 

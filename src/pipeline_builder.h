@@ -28,7 +28,7 @@ public:
     PipelineBuilder(AppConfig& appConfig);
     virtual ~PipelineBuilder();
 
-    int init(const std::string& pipeline_name);
+    int init(const std::string &pipeline_name, const std::string &variables);
     int clean();
     int build();
     int start();
@@ -38,7 +38,7 @@ public:
     int add_probe(const ProbeConfigItem& probe_config_item);
 
 private:
-    int init_gst(int argc, char * argv[]);
+
     GstElement* create_element(const std::string& factory, const std::string& name);
     GstElement* get_element(const std::string& name);
     GstPad* get_static_pad(const std::string& ele_name, const std::string& pad_name);
@@ -48,12 +48,14 @@ private:
 
     bool link_elements();
     bool unlink_elements();
+    bool link_two_elements(GstElement *left_element, GstElement *right_element);
 
     void update_build_progress(BuildProgress progress);
 
     static gboolean on_bus_msg(GstBus* bus, GstMessage* msg, gpointer data);
     static void on_src_pad_added(GstElement* element, GstPad* pad, gpointer data);
-    
+    static void on_sink_pad_added(GstElement *element, GstPad *pad, gpointer data);
+
     static GstPadProbeReturn probe_pad_callback(GstPad *pad, GstPadProbeInfo *info, gpointer user_data);
 
     void on_bus_msg_eos();

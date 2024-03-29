@@ -1,4 +1,20 @@
 pipelines:
+  h264_decode:
+    - filesrc location=filename.mp4
+    - qtdemux name=demux demux.video_0
+    - queue 
+    - h264parse
+    - openh264dec
+    - autovideosink
+
+  h265_decode:
+    - filesrc location=filename.mp4
+    - qtdemux name=demux demux.video_0
+    - queue 
+    - h265parse
+    - avdec_h265
+    - autovideosink
+
   pipeline_mp4_rtmp:
     - filesrc location=material/talk.mp4 
     - decodebin 

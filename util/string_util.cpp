@@ -241,7 +241,8 @@ std::string_view get_option(
     return "";
 }
 
-int split(std::string strValue, std::string separator, std::vector<std::string>& strArr) {
+int split(const std::string& strValue, const std::string& separator, std::vector<std::string> &strArr)
+{
     if(strValue.empty()) return 0;
 
     std::string::size_type pos0 = 0;
@@ -264,7 +265,58 @@ int split(std::string strValue, std::string separator, std::vector<std::string>&
     return cnt;
 }
 
-std::string bytesToHex(uint8_t* bytes, size_t len) {
+int split(const std::string &strValue, const std::string &separator, std::pair<std::string, std::string> &pair)
+{
+    if (strValue.empty())   return 0;
+    std::string::size_type pos0 = 0;
+    std::string::size_type pos1 = strValue.find(separator, pos0);
+    std::string::size_type seplen = separator.size();
+    if (pos1 != std::string::npos)
+    {
+        pair.first = strValue.substr(pos0, pos1 - pos0);
+        pair.second = strValue.substr(pos1 + seplen, std::string::npos);
+        return 1;
+    } else {
+        pair.first = strValue.substr(pos0, std::string::npos);
+        return 0;
+    }
+    
+}
+
+int split(const std::string & strValue, const std::string &sep1, const std::string &sep2, std::map<std::string, std::string> &strMap)
+{
+    if (strValue.empty()) return 0;
+
+    std::string::size_type pos0 = 0;
+    std::string::size_type pos1 = strValue.find(sep1, pos0);
+    std::string::size_type seplen = sep1.size();
+
+    int cnt = 0;
+    while (pos1 != std::string::npos)
+    {
+        auto kv = strValue.substr(pos0, pos1 - pos0);
+        std::pair<std::string, std::string> pair;
+        split(kv, sep2, pair);
+        strMap.insert(pair);
+        cnt++;
+        pos0 = pos1 + seplen;
+        pos1 = strValue.find(sep1, pos0);
+    }
+
+    if (pos1 > pos0)
+    {
+        auto kv = strValue.substr(pos0, pos1 - pos0);
+        std::pair<std::string, std::string> pair;
+        split(kv, sep2, pair);
+        strMap.insert(pair);
+        cnt++;
+    }
+
+    return cnt;
+}
+
+std::string bytesToHex(uint8_t *bytes, size_t len)
+{
     std::stringstream ss;
 
     // Ensure the output is in uppercase and has two characters for each byte
@@ -274,6 +326,22 @@ std::string bytesToHex(uint8_t* bytes, size_t len) {
     }
 
     return ss.str();
+}
+
+int replace_variables(std::string &desc, std::map<std::string, std::string> &var_map)
+{
+    int cnt = 0;
+    for (auto &kv : var_map)
+    {
+        size_t pos = 0;
+        while ((pos = desc.find(kv.first, pos)) != std::string::npos)
+        {
+            desc.replace(pos, kv.first.size(), kv.second);
+            pos += kv.second.length();
+            cnt++;
+        }
+    }
+    return cnt;
 }
 
 }//namespace hefei

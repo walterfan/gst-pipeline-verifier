@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include "yaml-cpp/yaml.h"
 #include "pipeline_config.h"
 
 namespace hefei {
@@ -26,6 +27,10 @@ public:
 
 private:
     int start_web_server(const char *doc_root, int port);
+
+    int read_pipelines_config(YAML::Node &config);
+    int read_general_config(YAML::Node &config);
+    int read_probe_config(YAML::Node &config);
 
     std::string m_config_file;
     AppConfig m_app_config;

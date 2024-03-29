@@ -1,4 +1,34 @@
 pipelines:
+
+  aac_encode:
+    - filesrc location=filename.mp4
+    - qtdemux name=demux demux.audio_0
+    - queue 
+    - avdec_aac 
+    - audioconvert
+    - autoaudiosink
+
+  amr_wb_decode:
+    - filesrc location=filename.mp4
+    - qtdemux name=demux demux.audio_0 
+    - queue 
+    - avdec_amrwb
+    - audioconvert 
+    - alsasink 
+  amr_nb_decode:
+    - filesrc location=filename.mp4
+    - qtdemux name=demux demux.audio_0 
+    - queue 
+    - avdec_amrnb 
+    - audioconvert 
+    - alsasink
+  mp3_decode:
+    - filesrc location=filename.mp3
+    - mpegaudioparse
+    - avdec_mp3 
+    - audioconvert 
+    - alsasink
+
   speaker_test:
     - audiotestsrc wave=5 volume=0.3 
     - audioconvert 

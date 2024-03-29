@@ -98,6 +98,66 @@ int PipelineVerifier::init(const std::string& log_level)
     return 0;
 }
 
+int PipelineVerifier::read_pipelines_config(YAML::Node& config)
+{
+    if (config[KEY_PIPELINES])
+    {
+        YAML::Node childNode = config[KEY_PIPELINES];
+        YAML::const_iterator it = childNode.begin();
+        for (; it != childNode.end(); ++it)
+        {
+            std::string key = it->first.as<std::string>();
+            std::vector<std::string> vals = it->second.as<std::vector<std::string>>();
+            m_app_config.get_pipelines_config().emplace(std::make_pair(key, vals));
+        }
+        return 0;
+    }
+    return -1;
+}
+
+int PipelineVerifier::read_general_config(YAML::Node &config)
+{
+    if (config[KEY_GENERAL])
+    {
+        auto config_map = config[KEY_GENERAL].as<std::map<std::string, std::string>>();
+
+        m_app_config.get_general_config().log_name = config_map[KEY_LOG_NAME];
+        m_app_config.get_general_config().log_level = str_to_int(config_map[KEY_LOG_LEVEL]);
+        m_app_config.get_general_config().log_folder = config_map[KEY_LOG_FOLDER];
+
+        m_app_config.get_general_config().debug_threshold = str_to_int(config_map[KEY_DEBUG_THRESHOLD]);
+        m_app_config.get_general_config().default_pipeline = config_map[KEY_DEFAULT_PIPELINE];
+
+        m_app_config.get_general_config().http_enabled = str_to_int(config_map[KEY_HTTP_ENABLED]);
+        m_app_config.get_general_config().http_port = str_to_int(config_map[KEY_HTTP_PORT]);
+        m_app_config.get_general_config().web_root = config_map[KEY_WEB_ROOT];
+        return 0;
+    }
+    return -1;
+}
+
+int PipelineVerifier::read_probe_config(YAML::Node &config)
+{
+    if (config[KEY_PROBES])
+    {
+        YAML::Node childNode = config[KEY_PROBES];
+        YAML::const_iterator it = childNode.begin();
+        for (; it != childNode.end(); ++it)
+        {
+            std::string key = it->first.as<std::string>();
+            std::map<std::string, std::string> vals = it->second.as<std::map<std::string, std::string>>();
+            ProbeConfigItem probeConfigItem;
+            probeConfigItem.probe_pipeline_name = vals["probe_pipeline"];
+            probeConfigItem.probe_element_name = vals["probe_element"];
+            probeConfigItem.probe_pad_name = vals["probe_pad"];
+            probeConfigItem.probe_type = str_to_int(vals["probe_type"]);
+            m_app_config.get_probe_config().add_probe_config_item(probeConfigItem);
+        }
+        return 0;
+    }
+    return -1;
+}
+// !! Do not write log in read config because logger need configuration for initiation
 int PipelineVerifier::read_config_file(const std::string config_file)
 {
     m_config_file = config_file;
@@ -115,83 +175,45 @@ int PipelineVerifier::read_config_file(const std::string config_file)
     }
 
     YAML::Node config = YAML::LoadFile(m_config_file);
-
-    if (config[KEY_PIPELINES])
-    {
-        YAML::Node childNode = config[KEY_PIPELINES];
-        YAML::const_iterator it = childNode.begin();
-        for (; it != childNode.end(); ++it)
-        {
-            std::string key = it->first.as<std::string>();
-            std::vector<std::string> vals = it->second.as<std::vector<std::string>>();
-            m_app_config.get_pipeline_config().emplace(std::make_pair(key, vals));
-        }
-    }
-
-    if (config[KEY_GENERAL])
-    {
-        auto config_map = config[KEY_GENERAL].as<std::map<std::string, std::string>>();
-
-        m_app_config.get_general_config().log_name = config_map[KEY_LOG_NAME];
-        m_app_config.get_general_config().log_level = str_to_int(config_map[KEY_LOG_LEVEL]);
-        m_app_config.get_general_config().log_folder = config_map[KEY_LOG_FOLDER];
-
-        m_app_config.get_general_config().debug_threshold = str_to_int(config_map[KEY_DEBUG_THRESHOLD]);
-        m_app_config.get_general_config().default_pipeline = config_map[KEY_DEFAULT_PIPELINE];
-
-        m_app_config.get_general_config().http_enabled = str_to_int(config_map[KEY_HTTP_ENABLED]);
-        m_app_config.get_general_config().http_port = str_to_int(config_map[KEY_HTTP_PORT]);
-        m_app_config.get_general_config().web_root = config_map[KEY_WEB_ROOT];
-    }
-
-    if (config[KEY_PROBES])
-    {
-        YAML::Node childNode = config[KEY_PROBES];
-        YAML::const_iterator it = childNode.begin();
-        for (; it != childNode.end(); ++it)
-        {
-            std::string key = it->first.as<std::string>();
-            std::map<std::string, std::string> vals = it->second.as<std::map<std::string, std::string>>();
-            ProbeConfigItem probeConfigItem;
-            probeConfigItem.probe_pipeline_name = vals["probe_pipeline"];
-            probeConfigItem.probe_element_name = vals["probe_element"];
-            probeConfigItem.probe_pad_name = vals["probe_pad"];
-            probeConfigItem.probe_type = str_to_int(vals["probe_type"]);
-            m_app_config.get_probe_config().add_probe_config_item(probeConfigItem);
-        }
-    }
+    
+    auto ret = read_pipelines_config(config);
+    ret += read_general_config(config);
+    ret += read_probe_config(config);
 
     if (directory_exists(CONFIG_FOLDER))
     {
         read_all_config_files(CONFIG_FOLDER);
     }
 
-    return 0;
+    return ret;
 }
-// do not write log in read config because logger need configuration for initiation
+
 int PipelineVerifier::read_all_config_files(const char *szFolder)
 {
     std::vector<std::string> config_files;
     int cnt = retrieve_files(szFolder, config_files);
     if (cnt <= 0)
     {
-        std::cerr << "No config files under " << szFolder << std::endl;
+        std::cerr << "no config files under " << szFolder << std::endl;
         return -1;
     }
     for (auto &file : config_files)
     {
         std::string config_file(szFolder);
         config_file = config_file + "/" + file;
-        yaml_to_str_vec_map(config_file, KEY_PIPELINES, m_app_config.get_pipeline_config());
+        
+        YAML::Node config = YAML::LoadFile(config_file);
+        read_pipelines_config(config);
+        
     }
     return cnt;
 }
 
 void PipelineVerifier::list_pipelines(const std::string &pipeline_name)
 {
-    auto it = m_app_config.get_pipeline_config().begin();
+    auto it = m_app_config.get_pipelines_config().begin();
     int i = 0;
-    for (; it != m_app_config.get_pipeline_config().end(); ++it)
+    for (; it != m_app_config.get_pipelines_config().end(); ++it)
     {
         if (!pipeline_name.empty())
         {
@@ -260,7 +282,7 @@ void PipelineVerifier::fork_web_server(int http_port, bool forced) {
     auto general_config = m_app_config.get_general_config();
     if (!general_config.http_enabled && !forced)
     {
-        ILOG("Not enable http server");
+        ILOG("not enable http server");
         return;
     }
 

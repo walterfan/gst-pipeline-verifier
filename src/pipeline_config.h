@@ -11,6 +11,7 @@
 
 namespace hefei {
 
+using pipelines_config_t = std::map<std::string, std::vector<std::string>>;
 
 struct ElementConfig {
     ElementConfig(const std::string& desc);
@@ -32,9 +33,11 @@ struct PipelineConfig {
     
     std::shared_ptr<ElementConfig> get_element_config(const std::string& name);
 
+    int init(const std::string &variables);
+
     int check_elements_name();
-    
-    //pipeline name
+
+    // pipeline name
     std::string m_name;
 
     //elements' description
@@ -76,13 +79,14 @@ class AppConfig {
 public:
     GeneralConfig& get_general_config() { return m_general_config; };
     ProbeConfig& get_probe_config()  { return m_probe_config; };
-    pipeline_config_t &get_pipeline_config() { return m_pipeline_config; }
+    pipelines_config_t &get_pipelines_config() { return m_pipeline_config; }
+
     bool has_probe_config_item(const std::string& item_name) { return m_probe_config.has_probe_config_item(item_name); }
     ProbeConfigItem& get_probe_config_item(const std::string& item)  { return m_probe_config.get_probe_config_item(item); };
 private:
     GeneralConfig m_general_config;
     ProbeConfig m_probe_config;
-    pipeline_config_t m_pipeline_config;
+    pipelines_config_t m_pipeline_config;
 };
 
 }//namespace hefei

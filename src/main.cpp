@@ -29,15 +29,20 @@ constexpr auto log_pattern = "[%Y-%m-%d %H:%M:%S.%e] [%n] [%l] [%t] [%s:%#] (%!)
 constexpr auto VERSION = "1.0.0";
 constexpr auto USAGE = "-f <config_file> -p <pipeline_name> -d <debug_level> [-l -h -v -a]";
 
-void usage() {
+void usage(char *argv[])
+{
     std::cout << "Usage: " << argv[0] << " " << USAGE << std::endl;
     std::cout << "- all arguments are optional" << std::endl;
-    std::cout << "\t-l : list pipelines" << std::endl;
-    std::cout << "\t-h : this screen for usage help" << std::endl;
-    std::cout << "\t-w <http_port>: enable web server on http_port" << std::endl;
-    std::cout << "\t-f <config_file> : specify config file, it is ./etc/config.yaml by default" << std::endl;
-    std::cout << "\t-p <pipeline_name> : specify a pipeline to start" << std::endl;
+
+    
     std::cout << "\t-d <log_level> : 0:trace, 1: debug, 2: info ..., default value set by config file" << std::endl;
+    std::cout << "\t-f <config_file> : specify config file, it is ./etc/config.yaml by default" << std::endl;
+    std::cout << "\t-h : this screen for usage help" << std::endl;
+    std::cout << "\t-l : list pipelines" << std::endl;
+
+    std::cout << "\t-p <pipeline_name> : specify a pipeline to start" << std::endl;
+    std::cout << "\t-r <replace_variables> : specify variables value, e.g. a=b,c=d" << std::endl;
+    std::cout << "\t-w <http_port>: enable web server on http_port" << std::endl;
 }
 
 int verify_pipeline(int argc, char *argv[], void* param=nullptr) {
@@ -58,7 +63,7 @@ int verify_pipeline(int argc, char *argv[], void* param=nullptr) {
     }
 
     if (parser.hasOption("h")) {
-        usage();
+        usage(argv);
         return 0;
     }
 
@@ -70,8 +75,10 @@ int verify_pipeline(int argc, char *argv[], void* param=nullptr) {
     auto web_port = parser.getOptionValue("w");
     verifier->fork_web_server(str_to_int(web_port), parser.hasOption("w"));
 
+    auto variables = parser.getOptionValue("r");
+
     auto builder = std::make_shared<PipelineBuilder>(verifier->get_app_config());
-    int ret = builder->init(pipeline_name);
+    int ret = builder->init(pipeline_name, variables);
     CHECK_VALUE("pipeline init, ret={}",  ret, 0);
     ret = builder->build();
     CHECK_VALUE("pipeline build, ret={}", ret, 0);
