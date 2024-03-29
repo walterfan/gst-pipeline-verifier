@@ -47,6 +47,15 @@ struct PipelineConfig {
     std::vector<std::shared_ptr<ElementConfig>> m_elements_config;
 };
 
+using PipelineConfigPtr = std::shared_ptr<PipelineConfig>;
+
+struct PipelinesConfig
+{
+    PipelineConfigPtr create_pipeline_config(const std::string &name, std::vector<std::string> &elements);
+    PipelineConfigPtr get_pipeline_config(const std::string &name);
+    std::map<std::string, PipelineConfigPtr> m_pipelines;
+};
+
 struct GeneralConfig {
     int http_enabled = 0;
     int http_port = 9988;

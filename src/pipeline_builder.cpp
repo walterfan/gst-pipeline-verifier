@@ -641,11 +641,11 @@ namespace hefei
 
                     if (gst_buffer_map(buf, &in_map_info, GST_MAP_READ))
                     {
-
-                        // std::string hexstr = bytesToHex(in_map_info.data, in_map_info.size);
-                        DLOG("probe callback: {}. received type=buffer size={}",
-                             thiz->m_probe_count.load(),
-                             in_map_info.size);
+                        std::string hexstr = bytesToHex(in_map_info.data, in_map_info.size);
+                        DLOG("probe callback: {}. received type=buffer size={}, content={}",
+                             thiz->m_probe_count.load(), 
+                             format_large_number(in_map_info.size),
+                             get_str_summary(hexstr, 128, 128));
 
                         return GST_PAD_PROBE_REMOVE;
                     }

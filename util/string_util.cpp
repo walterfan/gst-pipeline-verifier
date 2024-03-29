@@ -1,5 +1,4 @@
 #include "string_util.h"
-#include <iomanip>
 
 namespace hefei {
 
@@ -342,6 +341,37 @@ int replace_variables(std::string &desc, std::map<std::string, std::string> &var
         }
     }
     return cnt;
+}
+
+std::string get_last_n_chars(const std::string &input, uint32_t count)
+{
+    if (input.size() <= count)
+    {
+        return input;
+    }
+    else
+    {
+        return input.substr(input.size() - count);
+    }
+}
+
+std::string get_str_summary(const std::string &input, int n, int m)
+{
+    // Calculate the length of the resulting string
+    size_t resultLength = n + 3 + m;
+
+    // Check if the input string is shorter than n + m
+    if (input.length() <= resultLength)
+    {
+        // If so, return the entire string with "..." in the middle if n or m is greater than 0
+        return (n > 0 ? input.substr(0, n) : "") + "..." + (m > 0 ? input.substr(input.length() - m) : "");
+    }
+    else
+    {
+        // If the input string is longer, return the first n characters, "...",
+        // and the last m characters
+        return input.substr(0, n) + "..." + input.substr(input.length() - m);
+    }
 }
 
 }//namespace hefei

@@ -6,6 +6,7 @@
 #include <vector>
 #include <map>
 #include <sstream>
+#include <iomanip>
 
 namespace hefei {
 
@@ -76,4 +77,18 @@ std::string bytesToHex(uint8_t* bytes, size_t len);
 
 int replace_variables(std::string &desc, std::map<std::string, std::string> &var_map);
 
-} //namespace hefei
+std::string get_last_n_chars(const std::string &input, uint32_t count);
+
+std::string get_str_summary(const std::string &input, int n, int m);
+
+template <typename T>
+std::string format_large_number(T number)
+{
+    std::stringstream ss;
+    // Set the fill character to ','
+    ss << std::setw(3) << std::setfill(','); // This will add commas every 3 digits
+    ss << number;
+    return ss.str();
+}
+
+} // namespace hefei

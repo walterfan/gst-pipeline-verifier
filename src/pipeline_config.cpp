@@ -163,4 +163,17 @@ void ProbeConfig::add_probe_config_item(const ProbeConfigItem &probeConfigItem)
     config_items[probeConfigItem.probe_pipeline_name] = probeConfigItem;
 }
 
+PipelineConfigPtr PipelinesConfig::create_pipeline_config(const std::string &name, std::vector<std::string> &elements)
+{
+    return std::make_shared<PipelineConfig>(name, elements);
+}
+
+PipelineConfigPtr PipelinesConfig::get_pipeline_config(const std::string &name) {
+    auto it = m_pipelines.find(name);
+    if (it == m_pipelines.end()) {
+        return it->second;
+    }
+    return nullptr;
+}
+
 } // namespace hefei

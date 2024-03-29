@@ -10,9 +10,11 @@ general:
   http_port: 9988
   web_root: ./doc
 pipelines:
-  pipeline_test:
+  video_test:
     - videotestsrc num-buffers=100
-    - capsfilter caps="video/x-raw, width=1920, height=1080, framerate=30/1"
+    - capsfilter caps="video/x-raw, width=1280, height=720, framerate=30/1"
+    - timeoverlay
+    - identity
     - autovideosink
 
   mic_test:
@@ -80,6 +82,11 @@ probes:
     probe_element: timeoverlay
     probe_pad: src 
     #GST_PAD_PROBE_TYPE_ALL_BOTH (1776) – probe buffers
+    probe_type: 1776
+  video_test_probe:
+    probe_pipeline: video_test
+    probe_element: timeoverlay
+    probe_pad: src
     probe_type: 1776
 explain:
   mp4_play:
