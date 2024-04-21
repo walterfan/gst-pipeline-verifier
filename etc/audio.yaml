@@ -1,76 +1,90 @@
 pipelines:
 
   aac_encode:
-    - filesrc location=filename.mp4
-    - qtdemux name=demux demux.audio_0
-    - queue 
-    - avdec_aac 
-    - audioconvert
-    - autoaudiosink
+    desc: extract and play mp4's audio
+    tags: audio
+    steps:
+      - filesrc location=filename.mp4
+      - qtdemux name=demux demux.audio_0
+      - queue
+      - avdec_aac
+      - audioconvert
+      - autoaudiosink
 
-  amr_wb_decode:
-    - filesrc location=filename.mp4
-    - qtdemux name=demux demux.audio_0 
-    - queue 
-    - avdec_amrwb
-    - audioconvert 
-    - alsasink 
-  amr_nb_decode:
-    - filesrc location=filename.mp4
-    - qtdemux name=demux demux.audio_0 
-    - queue 
-    - avdec_amrnb 
-    - audioconvert 
-    - alsasink
   mp3_decode:
-    - filesrc location=filename.mp3
-    - mpegaudioparse
-    - avdec_mp3 
-    - audioconvert 
-    - alsasink
+    desc: play mp3 audio
+    tags: audio
+    steps:
+      - filesrc location=filename.mp3
+      - mpegaudioparse
+      - avdec_mp3
+      - audioconvert
+      - alsasink
 
   speaker_test:
-    - audiotestsrc wave=5 volume=0.3 
-    - audioconvert 
-    - autoaudiosink
+    desc: play test audio
+    tags: audio
+    steps:
+      - audiotestsrc wave=5 volume=0.3 num-buffers=50
+      - audioconvert
+      - autoaudiosink
+
   mic_test:
-    - alsasrc device=hw:3,0 
-    - audioconvert 
-    - audioresample 
-    - capsfilter caps="audio/x-raw,format=S16LE,channels=1,rate=16000" 
-    - autoaudiosink
+    desc: capture micphone audio as 16kHz 1 channel
+    tags: audio
+    steps:
+      - alsasrc device=hw:2,0
+      - audioconvert
+      - audioresample
+      - capsfilter caps="audio/x-raw,format=S16LE,channels=1,rate=16000"
+      - autoaudiosink
+
   wav_scope_test:
-    - audiotestsrc 
-    - audioconvert 
-    - wavescope 
-    - glimagesink
+    desc: display test audio's wave scope
+    tags: audio
+    steps:
+      - audiotestsrc
+      - audioconvert
+      - wavescope
+      - glimagesink
+
   wav_scope_to_rtmp:
-    - alsasrc device=hw:3,0 
-    - audioconvert 
-    - wavescope 
-    - queue 
-    - videoconvert 
-    - x264enc 
-    - flvmux streamable=true 
-    - queue
-    - rtmpsink location="rtmp://localhost:1935/live/wavetest"
+    desc: push wave scope video of mic's audio via rtmp
+    tags: audio
+    steps:
+      - alsasrc device=hw:2,0
+      - audioconvert
+      - wavescope
+      - queue
+      - videoconvert
+      - x264enc
+      - flvmux streamable=true
+      - queue
+      - rtmpsink location="rtmp://localhost:1935/live/wavetest"
+
   play_pcm:
-    - filesrc location=material/16k16bit.pcm
-    - capsfilter caps="audio/x-raw,format=S16LE,channels=1,rate=16000,layout=interleaved"
-    - audioconvert 
-    - audioresample 
-    - autoaudiosink
+    desc: play pcm audio file
+    tags: audio
+    steps:
+      - filesrc location=material/16k16bit.pcm
+      - capsfilter caps="audio/x-raw,format=S16LE,channels=1,rate=16000,layout=interleaved"
+      - audioconvert
+      - audioresample
+      - autoaudiosink
 
   record_wav:
-    - osxaudiosrc
-    - audioconvert 
-    - audioresample
-    - capsfilter caps="audio/x-raw,format=S16LE,channels=1,rate=16000,layout=interleaved"
-    - tee
-    - queue
-    - splitmuxsink location=test_%5d.wav muxer=wavenc
-    - tee
-    - queue
-    - wavescope
-    - videoconvert
-    - autovideosink
+    desc: record audio of mic of mac
+    tags: audio
+    steps:
+      - osxaudiosrc
+      - audioconvert
+      - audioresample
+      - capsfilter caps="audio/x-raw,format=S16LE,channels=1,rate=16000,layout=interleaved"
+      - tee
+      - queue
+      - splitmuxsink location=test_%5d.wav muxer=wavenc
+      - tee
+      - queue
+      - wavescope
+      - videoconvert
+      - autovideosink

@@ -1,44 +1,71 @@
   pipelines:
     mac_capture_screen:
-      - avfvideosrc capture-screen=true 
-      - videoscale 
-      - videoconvert 
-      - capsfilter caps="video/x-raw,width=640,height=480"
-      - osxvideosink
+      desc: capture video and display it on macos
+      tags: video, macos
+      steps:
+        - avfvideosrc capture-screen=true
+        - videoscale
+        - videoconvert
+        - capsfilter caps="video/x-raw,width=640,height=480"
+        - osxvideosink
 
     mac_audio_record:
-      - osxaudiosrc device=141 
-      - avenc_aac 
-      - hlssink2 max-files=5
+      desc: capture audio and record as hls
+      tags: audio, macos
+      steps:
+        - osxaudiosrc device=141
+        - avenc_aac
+        - hlssink2 max-files=5
 
     mac_wavescope:
-      - autoaudiosrc
-      - audioconvert 
-      - wavescope 
-      - glimagesink
+      desc: display audio's wave scope
+      tags: audio, macos
+      steps:
+        - autoaudiosrc
+        - audioconvert
+        - wavescope
+        - glimagesink
 
     mac_spacescope:
-      - audiotestsrc wave=9 
-      - audioconvert 
-      - spacescope 
-      - glimagesink
+      desc: display audio's space scope
+      tags: audio, macos
+      steps:
+        - audiotestsrc wave=9
+        - audioconvert
+        - spacescope
+        - glimagesink
 
     mac_display:
-      - avfvideosrc device-index=1 
-      - capsfilter caps="video/x-raw, width=1920, height=1080, framerate=30/1"
-      - clockoverlay
-      - autovideosink
+      desc: capture video and display it with clock
+      tags: video, macos
+      steps:
+        - avfvideosrc device-index=1
+        - capsfilter caps="video/x-raw, width=1920, height=1080, framerate=30/1"
+        - clockoverlay
+        - autovideosink
 
     mac_hls_record:
-      - avfvideosrc device-index=1 
-      - capsfilter caps="video/x-raw, width=1920, height=1080, framerate=30/1"
-      - videoconvert
-      - capsfilter caps="video/x-raw(memory:NVMM),format=I420,width=1920,height=1080,framerate=30/1"
-      - tee name=t t. 
-      - queue
-      - openh264enc
-      - h264parse
-      - hlssink2 max-files=10 location=/tmp/hls_record_%03d.ts playlist-location=/tmp/hls_playlist.m3u8 target-duration=10 t.
-      - queue
-      - autovideosink    
-    
+      desc: capture video and record it as hls
+      tags: video, macos
+      steps:
+        - avfvideosrc device-index=1
+        - capsfilter caps="video/x-raw, width=1920, height=1080, framerate=30/1"
+        - videoconvert
+        - capsfilter caps="video/x-raw(memory:NVMM),format=I420,width=1920,height=1080,framerate=30/1"
+        - tee name=t t.
+        - queue
+        - openh264enc
+        - h264parse
+        - hlssink2 max-files=10 location=/tmp/hls_record_%03d.ts playlist-location=/tmp/hls_playlist.m3u8 target-duration=10 t.
+        - queue
+        - autovideosink
+
+    mac_capture_screen:
+      desc: capture screen and playback it
+      tags: video, macos
+      steps:
+        - avfvideosrc capture-screen=true
+        - videoscale
+        - videoconvert
+        - capsfilter caps="ideo/x-raw,width=640,height=480"
+        - osxvideosink

@@ -12,9 +12,13 @@ bool directory_exists(const std::string& directory);
 
 bool file_exists(const std::string& filename);
 
-config_map_t read_yaml_section(const std::string& file_path, 
+config_map_t read_yaml_section(const std::string& file_path,
     const std::string& section_path);
 
 int retrieve_files(const char* szFolder, std::vector<std::string>& files);
+
+int file2msg(const std::string &filename, std::string &msg);
+
+std::vector<std::string> execute_command(const std::string &command);
 
 } //namespace hefei

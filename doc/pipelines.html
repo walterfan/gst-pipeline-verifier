@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GStreamer Progress</title>
+  <!-- Bootstrap CSS from a CDN accessible from China -->
+  <link rel="stylesheet" href="./bootstrap.min.css">
+  <style>
+    body {
+      background-color: #f8f9fa;
+    }
+    .jumbotron {
+      background-color: #343a40;
+      color: #ffffff;
+    }
+    .card {
+      margin-bottom: 20px;
+    }
+    .quote-container {
+      margin-top: 50px;
+      text-align: center;
+    }
+    .quote-text {
+      font-style: italic;
+    }
+    .float-window {
+      display: none;
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      background-color: white;
+      padding: 20px;
+      border: 1px solid #ccc;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+    }
+  </style>
+  <script>
+    // This function is called when the form is submitted
+    function verify_pipeline(event) {
+      event.preventDefault(); // Prevent the default form submission
+
+      // Get the values from the form inputs
+      const pipeline = document.getElementById('pipeline').value;
+      const parameters = document.getElementById('parameters').value;
+
+      // Create an object with the form data
+      const loginData = {
+        pipeline: pipeline,
+        args: parameters
+      };
+
+      // Convert the object to a JSON string
+      const jsonData = JSON.stringify(loginData);
+
+      // Define the URL of the server endpoint
+      const url = '/verify';
+
+      // Make the HTTP POST request with the JSON data
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: jsonData
+      })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          return response.json();
+        })
+        .then(data => {
+          //alert(JSON.stringify(data))
+          console.log('execute successful:', data);
+          // Handle the successful login response here
+        })
+        .catch(error => {
+          alert(error)
+          console.error('execute failed:', error);
+          // Handle any errors here
+        });
+    }
+  </script>
+</head>
+<body>
+
+  <div class="jumbotron text-center">
+    <h1><a href="/">Pipelines Verify Tool</a></h1>
+  </div>
+
+  <div class="container">
+
+    <div class="container quote-container">
+      <blockquote class="quote-text">
+        Pipeline is to process or execute a series of steps or stages in a linear sequence
+      </blockquote>
+    </div>
+
+   <!-- pipeline verify form -->
+   <form onsubmit="verify_pipeline(event)">
+    <div>
+      <label for="pipeline">Pipeline:</label>
+      <input type="text" id="pipeline" name="pipeline" required size="40">
+      <label for="parameters">Parameters:</label>
+      <input type="text" id="parameters" name="parameters"  size="40">
+      <button type="submit">verify</button>
+    </div>
+  </form>
+
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Pipeline</th>
+          <th>Description</th>
+          <th>Tags</th>
+          <th>Content</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{ pipeline_rows }}
+      </tbody>
+    </table>
+
+    <footer class="container quote-container">
+      <hr />
+      <p>&copy; 2010 ~ 2030 Walter Fan </p>
+    </footer>
+
+  </div> <!-- container div end -->
+
+
+  <!-- Bootstrap JS and dependencies -->
+  <script src="./jquery.min.js"></script>
+  <script src="./popper.min.js"></script>
+  <script src="./bootstrap.min.js"></script>
+</body>
+</html>

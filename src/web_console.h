@@ -1,8 +1,11 @@
 #pragma once
 #include <cstdio>
 #include "CivetServer.h"
+#include "pipeline_config.h"
 
 namespace hefei {
+
+using pipeline_runner_t = std::function<int(const std::string& name, const std::string& args)>;
 
 class TestHandler : public CivetHandler {
 public:
@@ -18,8 +21,21 @@ public:
     volatile bool exitNow = false;
 };
 
-
-int start_web_server(const char *doc_root, int port = 8080);
+class VerifyHandler : public CivetHandler
+{
+public:
+    VerifyHandler(PipelinesConfig& pipelines_config)
+        :m_pipelines_config (pipelines_config)  {}
+    bool handleGet(CivetServer *server, struct mg_connection *conn);
+    bool handlePost(CivetServer *server, struct mg_connection *conn);
+    std::string dump_pipelines();
+    void register_pipeline_runner(const pipeline_runner_t& runner) {
+        m_pipeline_runner = runner;
+    }
+private:
+    PipelinesConfig& m_pipelines_config;
+    pipeline_runner_t m_pipeline_runner;
+};
 
 
 }//namespace hefei

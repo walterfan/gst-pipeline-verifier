@@ -92,10 +92,14 @@ void ElementConfig::parse_desc(const std::string& desc) {
 }
 
 
-PipelineConfig::PipelineConfig(std::string name, std::vector<std::string> elements)
+PipelineConfig::PipelineConfig(const std::string& name, std::vector<std::string> elements,
+    const std::string &desc, const std::string &tags)
 : m_name(name)
-, m_elements_desc(elements) {
-    DLOG("create pipeline {}", m_name);   
+, m_steps(elements)
+, m_desc(desc)
+, m_tags(tags)
+{
+
 }
 
 std::shared_ptr<ElementConfig> PipelineConfig::get_element_config(const std::string& name) {
@@ -110,16 +114,20 @@ std::shared_ptr<ElementConfig> PipelineConfig::get_element_config(const std::str
 
 int PipelineConfig::init(const std::string &variables)
 {
+    if (m_initialized) {
+        return 0;
+    }
     std::map<std::string, std::string> var_map;
     int count = split(variables, ",", "=", var_map);
 
-    for (std::string &desc : m_elements_desc)
+    for (std::string &desc : m_steps)
     {
         if (count > 0) {
             replace_variables(desc, var_map);
         }
         m_elements_config.push_back(std::make_shared<ElementConfig>(desc));
     }
+    m_initialized = true;
     return 0;
 }
 
@@ -148,6 +156,26 @@ int PipelineConfig::check_elements_name()
     return 0;
 }
 
+std::string PipelineConfig::dump_pipeline_line() {
+    std::ostringstream ss;
+    auto cnt = m_steps.size();
+    for (int i = 0; i < cnt; ++i)
+    {
+        if (i > 0)
+        {
+            ss << "  ! ";
+        }
+        else
+        {
+            ss << "  gst-launch-1.0 ";
+        }
+
+        ss << m_steps[i];
+
+    }
+    return ss.str();
+}
+
 bool ProbeConfig::has_probe_config_item(const std::string &item_name)
 {
     return config_items.find(item_name) != config_items.end();
@@ -163,9 +191,10 @@ void ProbeConfig::add_probe_config_item(const ProbeConfigItem &probeConfigItem)
     config_items[probeConfigItem.probe_pipeline_name] = probeConfigItem;
 }
 
-PipelineConfigPtr PipelinesConfig::create_pipeline_config(const std::string &name, std::vector<std::string> &elements)
+void PipelinesConfig::emplace(const std::string &name, std::vector<std::string> &steps,
+                                           const std::string &desc, const std::string &tags)
 {
-    return std::make_shared<PipelineConfig>(name, elements);
+    m_pipelines.emplace(name, std::make_shared<PipelineConfig>(name, steps, desc, tags));
 }
 
 PipelineConfigPtr PipelinesConfig::get_pipeline_config(const std::string &name) {

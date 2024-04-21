@@ -5,7 +5,6 @@
 #include <TargetConditionals.h>
 #endif
 #include "pipeline_verifier.h"
-#include "pipeline_builder.h"
 #include "logger.h"
 #include "string_util.h"
 #include "file_util.h"
@@ -13,19 +12,7 @@
 #include "command_line_parser.h"
 
 using namespace hefei;
-    
-#define CHECK_VALUE(msg, value, expect)                          \
-    do {                                                         \
-        if ((value) != expect) {                                 \
-            ELOG(msg, value);                                    \
-            return value;                                        \
-        } else {                                                 \
-            ILOG(msg, value);                                    \
-        }                                                        \
-    } while (0)
 
-
-constexpr auto log_pattern = "[%Y-%m-%d %H:%M:%S.%e] [%n] [%l] [%t] [%s:%#] (%!) %v";
 constexpr auto VERSION = "1.0.0";
 constexpr auto USAGE = "-f <config_file> -p <pipeline_name> -d <debug_level> [-l -h -v -a]";
 
@@ -45,16 +32,15 @@ void usage(char *argv[])
     std::cout << "\t-w <http_port>: enable web server on http_port" << std::endl;
 }
 
+
 int verify_pipeline(int argc, char *argv[], void* param=nullptr) {
-    
+
     CommandLineParser parser(argc, argv);
 
-    std::string config_file = parser.getOptionValue("f");
     auto pipeline_name = parser.getOptionValue("p");
     
     auto verifier = std::make_unique<PipelineVerifier>(argc, argv);
-    verifier->read_config_file(config_file);
-    verifier->init(parser.getOptionValue("d"));
+    verifier->init(parser.getOptionValue("f"), parser.getOptionValue("d"));
 
     //handle arguments
     if (parser.hasOption("v")) {
@@ -77,19 +63,15 @@ int verify_pipeline(int argc, char *argv[], void* param=nullptr) {
 
     auto variables = parser.getOptionValue("r");
 
-    auto builder = std::make_shared<PipelineBuilder>(verifier->get_app_config());
-    int ret = builder->init(pipeline_name, variables);
-    CHECK_VALUE("pipeline init, ret={}",  ret, 0);
-    ret = builder->build();
-    CHECK_VALUE("pipeline build, ret={}", ret, 0);
-    ret = builder->start();
-    CHECK_VALUE("pipeline start, ret={}", ret, 0);
-    ret = builder->stop();
-    CHECK_VALUE("pipeline stop, ret={}",  ret, 0);
-    ret = builder->clean();
-    CHECK_VALUE("pipeline clean, ret={}", ret, 0);    
+    if (pipeline_name.empty())
+    {
+        pipeline_name = verifier->get_app_config().get_general_config().default_pipeline;
+    }
+    if (pipeline_name.empty()) {
+        return 0;
+    }
 
-    return ret;
+    return verifier->run_pipeline(pipeline_name, variables);
 }
 
 int main (int argc, char *argv[])

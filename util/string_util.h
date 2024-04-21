@@ -91,4 +91,10 @@ std::string format_large_number(T number)
     return ss.str();
 }
 
+std::string url_decode(const std::string &encodedStr);
+
+std::string vector_to_str(const std::vector<std::string> &vec);
+
+std::string replace_str(const std::string &original, const std::string &from, const std::string &to);
+
 } // namespace hefei

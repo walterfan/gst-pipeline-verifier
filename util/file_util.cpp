@@ -52,4 +52,44 @@ int retrieve_files(const char* szFolder, std::vector<std::string>& files)
   return files.size();
 }
 
+int file2msg(const std::string& filename, std::string &msg)
+{
+    std::ifstream ifile(filename.c_str());
+    if (!ifile)
+    {
+      std::cerr << "Unable to read " << filename << std::endl;
+      return -1;
+    }
+
+    msg = std::string((std::istreambuf_iterator<char>(ifile)), std::istreambuf_iterator<char>());
+    ifile.close();
+    return 0;
+}
+
+std::vector<std::string> execute_command(const std::string &command)
+{
+  std::vector<std::string> output;
+  FILE *pipe = popen(command.c_str(), "r"); // Open the pipe for reading the command output
+  if (!pipe)
+  {
+    std::cerr << "Could not execute command: " << command << std::endl;
+    return output;
+  }
+
+  char buffer[128];
+  while (fgets(buffer, 128, pipe) != NULL)
+  {
+    output.push_back(buffer);
+  }
+
+  int result = pclose(pipe); // Close the pipe and get the command result
+  if (result == -1)
+  {
+    std::cerr << "Command execution failed." << std::endl;
+  }
+
+  return output;
+}
+
+
 } //namespace hefei

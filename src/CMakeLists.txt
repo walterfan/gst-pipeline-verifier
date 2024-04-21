@@ -14,4 +14,5 @@ target_link_libraries(gst-pipeline-verify
     spdlog::spdlog
     yaml-cpp::yaml-cpp
     civetweb::civetweb-cpp
+    nlohmann_json::nlohmann_json
 )

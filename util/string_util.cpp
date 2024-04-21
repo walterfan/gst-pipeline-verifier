@@ -374,4 +374,73 @@ std::string get_str_summary(const std::string &input, int n, int m)
     }
 }
 
+bool isxdigit(char c)
+{
+    // Check if the character is a hexadecimal digit
+    return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+}
+
+std::string url_decode(const std::string &encodedStr)
+{
+    std::string decodedStr;
+    for (std::size_t i = 0; i < encodedStr.length(); ++i)
+    {
+        if (encodedStr[i] == '%')
+        {
+            // Check if the next characters are a valid percent-encoded sequence
+            if (i + 2 < encodedStr.length() && isxdigit(encodedStr[i + 1]) && isxdigit(encodedStr[i + 2]))
+            {
+                // Convert the percent-encoded sequence to its ASCII character
+                char octet;
+                std::stringstream ss;
+                ss << std::hex << encodedStr.substr(i + 1, 2);
+                ss >> octet;
+                decodedStr += octet;
+                // Skip the percent and the two hex digits
+                i += 2;
+            }
+        }
+        else
+        {
+            decodedStr += encodedStr[i];
+        }
+    }
+    return decodedStr;
+}
+
+std::string vector_to_str(const std::vector<std::string> &vec)
+{
+    size_t totalLength = 0;
+    for (const auto &str : vec)
+    {
+        totalLength += str.length();
+    }
+
+    std::string result(totalLength, 0); // Reserve space for the combined strings
+    for (const auto &str : vec)
+    {
+        result.append(str);
+    }
+
+    return result;
+}
+
+
+std::string replace_str(const std::string &original, const std::string &from, const std::string &to)
+{
+    std::string result = original; // Copy the original string to modify
+    size_t start_pos = 0;          // Starting index for the search
+
+    // Loop through the string and continue replacing 'from' with 'to' until no more occurrences are found
+    while ((start_pos = result.find(from, start_pos)) != std::string::npos)
+    {
+        // Replace the found substring with 'to'
+        result.replace(start_pos, from.length(), to);
+        // Move the starting position to the end of the replaced substring
+        start_pos += to.length();
+    }
+
+    return result; // Return the modified string
+}
+
 }//namespace hefei

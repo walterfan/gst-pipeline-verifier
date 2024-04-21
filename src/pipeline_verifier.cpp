@@ -5,11 +5,23 @@
 #include <iostream>
 #include "yaml-cpp/yaml.h"
 #include "pipeline_verifier.h"
+#include "pipeline_builder.h"
 #include "web_console.h"
 
 using namespace std;
 
 namespace hefei {
+
+#define CHECK_VALUE(msg, value, expect)                      \
+do {                                                         \
+    if ((value) != expect) {                                 \
+        ELOG(msg, value);                                    \
+        return value;                                        \
+    } else {                                                 \
+        ILOG(msg, value);                                    \
+    }                                                        \
+} while (0)
+
 
 constexpr auto KEY_DEFAULT_PIPELINE = "default_pipeline";
 constexpr auto DECODE_BIN = "decodebin";
@@ -66,10 +78,12 @@ PipelineVerifier::~PipelineVerifier()
     gst_deinit();
 }
 
-int PipelineVerifier::init(const std::string& log_level)
+int PipelineVerifier::init(const std::string& config_file, const std::string& log_level)
 {
+    read_config_file(config_file);
+
     GeneralConfig &general_config = get_app_config().get_general_config();
-    
+
     if (!log_level.empty())
     {
         general_config.log_level = str_to_int(log_level);
@@ -107,12 +121,34 @@ int PipelineVerifier::read_pipelines_config(YAML::Node& config)
         for (; it != childNode.end(); ++it)
         {
             std::string key = it->first.as<std::string>();
-            std::vector<std::string> vals = it->second.as<std::vector<std::string>>();
-            m_app_config.get_pipelines_config().emplace(std::make_pair(key, vals));
+
+            read_pipeline_config(key, it->second);
         }
         return 0;
     }
     return -1;
+}
+
+int PipelineVerifier::read_pipeline_config(const std::string& key, const YAML::Node &pipelineNode)
+{
+    if (pipelineNode.Type() == YAML::NodeType::Map)
+    {
+        auto pipeline_tags = pipelineNode["tags"];
+        auto pipeline_desc = pipelineNode["desc"];
+        auto pipeline_steps = pipelineNode["steps"];
+
+        auto vec = pipeline_steps.as<std::vector<std::string>>();
+
+        m_app_config.get_pipelines_config().emplace(key, vec,
+            pipeline_desc.as<std::string>(), pipeline_tags.as<std::string>());
+    } else if (pipelineNode.Type() == YAML::NodeType::Sequence)
+    {
+        auto vec = pipelineNode.as<std::vector<std::string>>();
+        m_app_config.get_pipelines_config().emplace(key, vec);
+    } else {
+        WLOG("unkown type of {}", key);
+    }
+    return 0;
 }
 
 int PipelineVerifier::read_general_config(YAML::Node &config)
@@ -176,9 +212,9 @@ int PipelineVerifier::read_config_file(const std::string config_file)
 
     YAML::Node config = YAML::LoadFile(m_config_file);
     
-    auto ret = read_pipelines_config(config);
-    ret += read_general_config(config);
+    auto ret = read_general_config(config);
     ret += read_probe_config(config);
+    ret += read_pipelines_config(config);
 
     if (directory_exists(CONFIG_FOLDER))
     {
@@ -211,9 +247,10 @@ int PipelineVerifier::read_all_config_files(const char *szFolder)
 
 void PipelineVerifier::list_pipelines(const std::string &pipeline_name)
 {
-    auto it = m_app_config.get_pipelines_config().begin();
+    auto& pipelines_map = m_app_config.get_pipelines_config().get_pipelines();
+    auto it = pipelines_map.begin();
     int i = 0;
-    for (; it != m_app_config.get_pipelines_config().end(); ++it)
+    for (; it != pipelines_map.end(); ++it)
     {
         if (!pipeline_name.empty())
         {
@@ -223,7 +260,7 @@ void PipelineVerifier::list_pipelines(const std::string &pipeline_name)
             }
         }
         cout << (++i) << ". " << it->first << ": " << endl;
-        auto &vec = it->second;
+        auto &vec = it->second->m_steps;
         auto cnt = vec.size();
         for (int i = 0; i < cnt; ++i)
         {
@@ -264,6 +301,16 @@ int PipelineVerifier::start_web_server(const char *doc_root, int port)
     ExitHandler exit_handler;
     server.addHandler("/exit", exit_handler);
 
+    VerifyHandler verify_handler(m_app_config.get_pipelines_config());
+    server.addHandler("/verify", verify_handler);
+
+    verify_handler.register_pipeline_runner([&](const std::string& name, const std::string& args) {
+        ILOG("pipeline {} start", name);
+        auto ret = run_pipeline(name, args);
+        ILOG("pipeline {} end with {}", name, ret);
+        return ret;
+    });
+
     ILOG("web server started on port {} for {}", port, doc_root);
     while (!exit_handler.exit_now())
     {
@@ -290,18 +337,34 @@ void PipelineVerifier::fork_web_server(int http_port, bool forced) {
         http_port = general_config.http_port;
     }
 
-    m_thptr = std::make_unique<std::thread>([=] {
+    m_web_thread = std::make_unique<std::thread>([=] {
         ILOG("start web server on {}", http_port);
-        start_web_server(general_config.web_root.c_str(), http_port); 
+        start_web_server(general_config.web_root.c_str(), http_port);
     });
     
 }
 
 void PipelineVerifier::join_web_server()
 {
-    if (m_thptr) {
-        m_thptr->join();
+    if (m_web_thread) {
+        m_web_thread->join();
     }
+}
+
+
+int PipelineVerifier::run_pipeline(const std::string pipeline_name, const std::string variables) {
+    PipelineBuilder builder(m_app_config);
+    int ret = builder.init(pipeline_name, variables);
+    CHECK_VALUE("pipeline init, ret={}",  ret, 0);
+    ret = builder.build();
+    CHECK_VALUE("pipeline build, ret={}", ret, 0);
+    ret = builder.start();
+    CHECK_VALUE("pipeline start, ret={}", ret, 0);
+    ret = builder.stop();
+    CHECK_VALUE("pipeline stop, ret={}",  ret, 0);
+    ret = builder.clean();
+    CHECK_VALUE("pipeline clean, ret={}", ret, 0);
+    return ret;
 }
 
 } // namespace hefei

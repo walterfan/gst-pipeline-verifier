@@ -26,23 +26,20 @@ namespace hefei
         auto &pipelines_config = m_app_config.get_pipelines_config();
 
         m_pipeline_name = pipeline_name;
-        if (m_pipeline_name.empty())
-        {
-            m_pipeline_name = m_app_config.get_general_config().default_pipeline;
-        }
 
         if (pipelines_config.empty())
         {
             ELOG("not found pipeline in config file");
             return -1;
         }
-        auto it = pipelines_config.find(std::string(m_pipeline_name));
-        if (it == pipelines_config.end())
+        auto& pipelines_map = pipelines_config.get_pipelines();
+        auto it = pipelines_map.find(std::string(m_pipeline_name));
+        if (it == pipelines_map.end())
         {
             ELOG("not found pipeline {}", m_pipeline_name);
             return -1;
         }
-        m_pipeline_config = std::make_shared<PipelineConfig>(it->first, it->second);
+        m_pipeline_config = it->second;
         m_pipeline_config->init(variables);
         m_pipeline_config->check_elements_name();
 

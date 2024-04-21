@@ -32,6 +32,7 @@ find_package(fmt CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(yaml-cpp CONFIG REQUIRED)
 find_package(civetweb CONFIG REQUIRED)
+find_package(nlohmann_json 3.11.3 REQUIRED)
 
 if(NOT spdlog_FOUND)
     message(WARNING "spdlog not found!")
