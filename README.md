@@ -35,7 +35,7 @@ GStreamer 可以完成如下工作
 ## Usage
 
 ```sh
-./bin/gst-pipeline-verifier -p <pipeline_name> [-f <config_file>] [-v] [-l]
+./bin/gst-pipeline-verifier -p <pipeline_name> [-f <config_file>] [-v] [-l] [-w web_port]
 ```
 * -p <pipeline_name> : specify pipeline name that want to verify
                        the detailed pipeline configuration refers to config_file
@@ -46,7 +46,9 @@ GStreamer 可以完成如下工作
 
 * -v : print current version
 
-* -a : load all configuration files
+* -w : specify web port, default is 9090
+
+![snapshot.png](./doc/snapshot.png)
 
 ## Example
 
@@ -54,6 +56,9 @@ GStreamer 可以完成如下工作
 
 # print usage
 ./bin/gst-pipeline-verify -h
+
+# start web console to execute a pipeline
+./bin/gst-pipeline-verify -w 9090
 
 # list all pre-defined pipeline
 ./bin/gst-pipeline-verify -l -a
