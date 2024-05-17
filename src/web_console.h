@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdio>
+#include <functional>
 #include "CivetServer.h"
 #include "pipeline_config.h"
 
