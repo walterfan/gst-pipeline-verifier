@@ -9,6 +9,7 @@ general:
   http_enabled: 1
   http_port: 9090
   web_root: ./doc
+  web_token: GstPipeVerifier
 pipelines:
   video_test:
     tags: video, test

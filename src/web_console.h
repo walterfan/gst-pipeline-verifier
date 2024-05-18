@@ -25,8 +25,8 @@ public:
 class VerifyHandler : public CivetHandler
 {
 public:
-    VerifyHandler(PipelinesConfig& pipelines_config)
-        :m_pipelines_config (pipelines_config)  {}
+    VerifyHandler(AppConfig& app_config)
+        :m_app_config (app_config)  {}
     bool handleGet(CivetServer *server, struct mg_connection *conn);
     bool handlePost(CivetServer *server, struct mg_connection *conn);
     std::string dump_pipelines();
@@ -34,7 +34,7 @@ public:
         m_pipeline_runner = runner;
     }
 private:
-    PipelinesConfig& m_pipelines_config;
+    AppConfig& m_app_config;
     pipeline_runner_t m_pipeline_runner;
 };
 

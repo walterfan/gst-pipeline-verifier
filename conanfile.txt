@@ -4,6 +4,7 @@ yaml-cpp/0.8.0
 fmt/10.2.1
 civetweb/1.16
 nlohmann_json/3.11.3
+libcurl/8.6.0
 
 [generators]
 CMakeDeps

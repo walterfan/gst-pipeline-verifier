@@ -45,11 +45,12 @@
       // Get the values from the form inputs
       const pipeline = document.getElementById('pipeline').value;
       const parameters = document.getElementById('parameters').value;
-
+      const token = document.getElementById('token').value;
       // Create an object with the form data
       const loginData = {
         pipeline: pipeline,
-        args: parameters
+        args: parameters,
+        token: token
       };
 
       // Convert the object to a JSON string
@@ -75,12 +76,10 @@
         .then(data => {
           //alert(JSON.stringify(data))
           console.log('execute successful:', data);
-          // Handle the successful login response here
         })
         .catch(error => {
           alert(error)
           console.error('execute failed:', error);
-          // Handle any errors here
         });
     }
   </script>
@@ -103,9 +102,11 @@
    <form onsubmit="verify_pipeline(event)">
     <div>
       <label for="pipeline">Pipeline:</label>
-      <input type="text" id="pipeline" name="pipeline" required size="40">
+      <input type="text" id="pipeline" name="pipeline" required size="30">
       <label for="parameters">Parameters:</label>
-      <input type="text" id="parameters" name="parameters"  size="40">
+      <input type="text" id="parameters" name="parameters"  size="30">
+      <label for="token">token:</label>
+      <input type="text" id="token" name="token"  size="30">
       <button type="submit">verify</button>
     </div>
   </form>

@@ -85,6 +85,7 @@ struct GeneralConfig {
     std::string log_name;
     std::string default_pipeline;
     std::string web_root = "./doc";
+    std::string web_token;
 };
 
 

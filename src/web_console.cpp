@@ -8,7 +8,11 @@
 #include "file_util.h"
 #include "logger.h"
 #include "string_util.h"
+#include "http_util.h"
 #include <nlohmann/json.hpp>
+
+
+
 using json = nlohmann::json;
 
 namespace hefei {
@@ -91,7 +95,8 @@ std::string VerifyHandler::dump_pipelines() {
     std::stringstream ss;
 
     int i = 0;
-    for(auto kv: m_pipelines_config.get_pipelines()) {
+    auto pipelines_config = m_app_config.get_pipelines_config();
+    for(auto kv: pipelines_config.get_pipelines()) {
         auto& pipeline = kv.second;
         ss << "<tr><td>" << (++i) << "</td>";
         ss << "<td>" << pipeline->m_name << "</td>";
@@ -129,12 +134,17 @@ bool VerifyHandler::handleGet(CivetServer *server, struct mg_connection *conn)
     return true;
 }
 
-static int send_json(struct mg_connection *conn, const char* json_str)
+static int send_json(struct mg_connection *conn, int status, const char* json_str)
 {
     size_t json_str_len = strlen(json_str);
 
     /* Send HTTP message header (+1 for \n) */
-    mg_send_http_ok(conn, "application/json; charset=utf-8", json_str_len + 1);
+    if (status >=200 && status < 400) {
+        mg_send_http_ok(conn, "application/json; charset=utf-8", json_str_len + 1);
+    } else {
+        mg_send_http_error(conn, status, "%s", http_response_status(status));
+    }
+
 
     /* Send HTTP message content */
     mg_write(conn, json_str, json_str_len);
@@ -151,7 +161,7 @@ static void respond_json(int result, const std::string& desc, struct mg_connecti
     nlohmann::json json_obj;
     json_obj["result"] = result;
     json_obj["desc"] = desc;
-    send_json(conn, json_obj.dump().c_str());
+    send_json(conn, result,  json_obj.dump().c_str());
 }
 
 bool VerifyHandler::handlePost(CivetServer *server, struct mg_connection *conn) {
@@ -174,21 +184,44 @@ bool VerifyHandler::handlePost(CivetServer *server, struct mg_connection *conn) 
     trim(post_data);
     DLOG("verify pipeline: {}", post_data);
 
-    json json_data = json::parse(post_data);
-    auto pipe = json_data["pipeline"].get<std::string>();
-    auto args = json_data["args"].get<std::string>();
-    DLOG("pipeline={}, parameters={}", pipe, args);
-    if (m_pipeline_runner) {
-        int ret = m_pipeline_runner(pipe, args);
-        if (ret == 0) {
-            respond_json(200, "pipeline verified succeed", conn);
-        } else {
-            respond_json(400, "pipeline verified failed", conn);
-        }
-    } else {
-        respond_json(500, "m_pipeline_runner have not registered", conn);
-    }
+    try {
+        json json_data = json::parse(post_data);
 
+        if (!(json_data.contains("pipeline") && json_data.contains("token"))) {
+            respond_json(400, "pipeline and token fields required", conn);
+            return true;
+        }
+
+        auto pipe = json_data["pipeline"].get<std::string>();
+        auto args = json_data["args"].get<std::string>();
+        auto token = json_data["token"].get<std::string>();
+        if (m_app_config.get_general_config().web_token.compare(trim_space(token)) != 0) {
+            WLOG("token not match: '{}'!='{}'", m_app_config.get_general_config().web_token, token);
+            respond_json(401, "token verified failed", conn);
+            return true;
+        }
+        DLOG("pipeline={}, parameters={}", pipe, args);
+        if (m_pipeline_runner) {
+            int ret = m_pipeline_runner(pipe, args);
+            if (ret == 0) {
+                respond_json(200, "pipeline verified succeed", conn);
+            } else {
+                respond_json(400, "pipeline verified failed", conn);
+            }
+        } else {
+            respond_json(500, "m_pipeline_runner have not registered", conn);
+        }
+    }
+    catch (const nlohmann::json::parse_error &e)
+    {
+        ELOG("JSON parse error:{} ", e.what());
+        respond_json(400, "json parse error", conn);
+    }
+    catch (const std::exception &e)
+    {
+        ELOG("Standard exception: {}", e.what());
+        respond_json(500, "std exception", conn);
+    }
     return true;
 }
 

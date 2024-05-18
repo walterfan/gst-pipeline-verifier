@@ -36,6 +36,7 @@ constexpr auto KEY_DEBUG_THRESHOLD = "debug_threshold";
 constexpr auto KEY_HTTP_ENABLED = "http_enabled";
 constexpr auto KEY_HTTP_PORT = "http_port";
 constexpr auto KEY_WEB_ROOT = "web_root";
+constexpr auto KEY_WEB_TOKEN = "web_token";
 constexpr auto CONFIG_FOLDER = "./etc";
 constexpr auto CONFIG_FILE = "config.yaml";
 constexpr auto SPDLOG_FLUSH_SEC = 3;
@@ -167,6 +168,7 @@ int PipelineVerifier::read_general_config(YAML::Node &config)
         m_app_config.get_general_config().http_enabled = str_to_int(config_map[KEY_HTTP_ENABLED]);
         m_app_config.get_general_config().http_port = str_to_int(config_map[KEY_HTTP_PORT]);
         m_app_config.get_general_config().web_root = config_map[KEY_WEB_ROOT];
+        m_app_config.get_general_config().web_token = config_map[KEY_WEB_TOKEN];
         return 0;
     }
     return -1;
@@ -301,7 +303,7 @@ int PipelineVerifier::start_web_server(const char *doc_root, int port)
     ExitHandler exit_handler;
     server.addHandler("/exit", exit_handler);
 
-    VerifyHandler verify_handler(m_app_config.get_pipelines_config());
+    VerifyHandler verify_handler(m_app_config);
     server.addHandler("/verify", verify_handler);
 
     verify_handler.register_pipeline_runner([&](const std::string& name, const std::string& args) {
