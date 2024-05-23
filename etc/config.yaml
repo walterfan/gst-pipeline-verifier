@@ -1,12 +1,12 @@
 general:
-  default_pipeline:
+  default_pipeline: pipeline_test
   log_folder: ./log
   log_name: pipeline_verify
   # log level - 0:trace, 1: debug, 2: info ...
   log_level: 2
   # gstreamer log level - GST_LEVEL_FIXME=3,GST_LEVEL_INFO=4,..
   debug_threshold: 3 
-  http_enabled: 1
+  http_enabled: 0
   http_port: 9090
   web_root: ./doc
   web_token: GstPipeVerifier

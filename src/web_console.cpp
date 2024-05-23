@@ -196,7 +196,7 @@ bool VerifyHandler::handlePost(CivetServer *server, struct mg_connection *conn) 
         auto args = json_data["args"].get<std::string>();
         auto token = json_data["token"].get<std::string>();
         if (m_app_config.get_general_config().web_token.compare(trim_space(token)) != 0) {
-            WLOG("token not match: '{}'!='{}'", m_app_config.get_general_config().web_token, token);
+            //WLOG("token not match: '{}'!='{}'", m_app_config.get_general_config().web_token, token);
             respond_json(401, "token verified failed", conn);
             return true;
         }
