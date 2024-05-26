@@ -24,8 +24,6 @@ do {                                                         \
 
 
 constexpr auto KEY_DEFAULT_PIPELINE = "default_pipeline";
-constexpr auto DECODE_BIN = "decodebin";
-constexpr auto DEMUX = "demux";
 constexpr auto KEY_PIPELINES = "pipelines";
 constexpr auto KEY_PROBES = "probes";
 constexpr auto KEY_GENERAL = "general";

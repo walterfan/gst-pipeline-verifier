@@ -109,7 +109,7 @@ std::string VerifyHandler::dump_pipelines() {
 
 bool VerifyHandler::handleGet(CivetServer *server, struct mg_connection *conn)
 {
-    const struct mg_request_info *req_info = mg_get_request_info(conn);
+    //const struct mg_request_info *req_info = mg_get_request_info(conn);
     mg_printf(conn,
               "HTTP/1.1 200 OK\r\nContent-Type: "
               "text/html\r\nConnection: close\r\n\r\n");

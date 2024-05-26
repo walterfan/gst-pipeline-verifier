@@ -15,7 +15,7 @@ ElementConfig::ElementConfig(const std::string& desc) {
 }
 
 void ElementConfig::set_factory(const std::string& factory) {
-    if ((startswith(factory, "\"") && endswith(factory, "\"")) 
+    if ((startswith(factory, "\"") && endswith(factory, "\""))
         || (startswith(factory, "\'") && endswith(factory, "\'"))) {
         
         insert_prop("caps", factory);
@@ -95,9 +95,9 @@ void ElementConfig::parse_desc(const std::string& desc) {
 PipelineConfig::PipelineConfig(const std::string& name, std::vector<std::string> elements,
     const std::string &desc, const std::string &tags)
 : m_name(name)
-, m_steps(elements)
 , m_desc(desc)
 , m_tags(tags)
+, m_steps(elements)
 {
 
 }
