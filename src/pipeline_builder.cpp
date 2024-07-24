@@ -22,7 +22,6 @@ namespace hefei
 
     int PipelineBuilder::init(const std::string &pipeline_name, const std::string &variables)
     {
-
         auto &pipelines_config = m_app_config.get_pipelines_config();
 
         m_pipeline_name = pipeline_name;
@@ -108,6 +107,7 @@ namespace hefei
         {
             del_element(ele_cfg_ptr->m_name);
         }
+        m_pipeline_config->clean();
         return 0;
     }
 

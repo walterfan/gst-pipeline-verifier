@@ -209,16 +209,21 @@ int PipelineVerifier::read_config_file(const std::string config_file)
             m_config_file.append(CONFIG_FILE);
         }
     }
+    int ret = 0;
+    try {
+        YAML::Node config = YAML::LoadFile(m_config_file);
 
-    YAML::Node config = YAML::LoadFile(m_config_file);
-    
-    auto ret = read_general_config(config);
-    ret += read_probe_config(config);
-    ret += read_pipelines_config(config);
+        ret = read_general_config(config);
+        ret += read_probe_config(config);
+        ret += read_pipelines_config(config);
 
-    if (directory_exists(CONFIG_FOLDER))
-    {
-        read_all_config_files(CONFIG_FOLDER);
+        if (directory_exists(CONFIG_FOLDER))
+        {
+            read_all_config_files(CONFIG_FOLDER);
+        }
+    } catch (const std::exception &e) {
+        std::cerr << "Configuration error: " << e.what() << std::endl;
+        return -1;
     }
 
     return ret;
@@ -227,7 +232,7 @@ int PipelineVerifier::read_config_file(const std::string config_file)
 int PipelineVerifier::read_all_config_files(const char *szFolder)
 {
     std::vector<std::string> config_files;
-    int cnt = retrieve_files(szFolder, config_files);
+    int cnt = retrieve_files(szFolder, ".yaml", config_files);
     if (cnt <= 0)
     {
         std::cerr << "no config files under " << szFolder << std::endl;
@@ -329,7 +334,7 @@ void PipelineVerifier::fork_web_server(int http_port, bool forced) {
     auto general_config = m_app_config.get_general_config();
     if (!general_config.http_enabled && !forced)
     {
-        ILOG("not enable http server");
+        DLOG("not enable http server");
         return;
     }
 

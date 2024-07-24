@@ -7,7 +7,7 @@
 namespace hefei {
 
 class PipelineVerifier {
-public:    
+public:
     PipelineVerifier(int argc, char *argv[]);
     virtual ~PipelineVerifier();
 
@@ -25,7 +25,7 @@ public:
 
     void join_web_server();
 
-    int run_pipeline(const std::string pipeline_name, const std::string variables); 
+    int run_pipeline(const std::string pipeline_name, const std::string variables);
 
 private:
     int start_web_server(const char *doc_root, int port);

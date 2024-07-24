@@ -63,15 +63,12 @@ int verify_pipeline(int argc, char *argv[], void* param=nullptr) {
 
     auto variables = parser.getOptionValue("r");
 
-    if (pipeline_name.empty())
-    {
-        pipeline_name = verifier->get_app_config().get_general_config().default_pipeline;
-    }
-    if (pipeline_name.empty()) {
-        return 0;
+    if (!pipeline_name.empty()) {
+        return verifier->run_pipeline(pipeline_name, variables);
     }
 
-    return verifier->run_pipeline(pipeline_name, variables);
+    usage(argv);
+    return 0;
 }
 
 int main (int argc, char *argv[])

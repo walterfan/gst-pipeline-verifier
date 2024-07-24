@@ -111,6 +111,14 @@ std::shared_ptr<ElementConfig> PipelineConfig::get_element_config(const std::str
     return nullptr;
 }
 
+int PipelineConfig::clean() {
+    if (!m_initialized) {
+        return 0;
+    }
+    m_elements_config.clear();
+    m_initialized = false;
+    return 0;
+}
 
 int PipelineConfig::init(const std::string &variables)
 {
@@ -123,7 +131,12 @@ int PipelineConfig::init(const std::string &variables)
     for (std::string &desc : m_steps)
     {
         if (count > 0) {
-            replace_variables(desc, var_map);
+
+            int cnt = replace_variables(desc, var_map);
+            if (cnt > 0) {
+                DLOG("replace desc to {}", desc);
+            }
+
         }
         m_elements_config.push_back(std::make_shared<ElementConfig>(desc));
     }
