@@ -38,6 +38,8 @@ struct PipelineConfig {
 
     int check_elements_name();
 
+    int clean();
+
     std::string dump_pipeline_line();
 
     // pipeline name

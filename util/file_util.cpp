@@ -22,34 +22,13 @@ bool file_exists(const std::string& filename) {
     return file.good(); 
 }
 
-std::map<std::string, std::string> read_yaml_section(const std::string& file_path, 
+std::map<std::string, std::string> read_yaml_section(const std::string& file_path,
     const std::string& section_path) {
     YAML::Node config = YAML::LoadFile(file_path);
     if (config[section_path]) {
         return config[section_path].as<std::map<std::string, std::string>>();
     }
     return std::map<std::string, std::string>();
-}
-
-int retrieve_files(const char* szFolder, std::vector<std::string>& files)
-{
-  struct dirent* direntp;
-  DIR* dirp = opendir(szFolder);
-
-  if(NULL == dirp) {
-    return -1;
-  }
-
-  while( NULL != (direntp = readdir(dirp))) {
-    std::string file = direntp->d_name;
-    if(".." == file || "." == file)
-        continue;
-    files.push_back(file);
-  }
-
-  while((-1 == closedir(dirp)) && (errno == EINTR));
-
-  return files.size();
 }
 
 int file2msg(const std::string& filename, std::string &msg)
@@ -89,6 +68,31 @@ std::vector<std::string> execute_command(const std::string &command)
   }
 
   return output;
+}
+
+int retrieve_files(std::string const &folder,
+    std::string const &suffix,
+    std::vector<std::string> &files) {
+    struct dirent *direntp;
+    DIR *dirp = opendir(folder.c_str());
+
+    if (NULL == dirp) {
+        return -1;
+    }
+
+    while (NULL != (direntp = readdir(dirp))) {
+        std::string file = direntp->d_name;
+        if (".." == file || "." == file)
+            continue;
+        if (suffix.empty() || endswith(file, suffix)) {
+            files.push_back(file);
+        }
+    }
+
+    while ((-1 == closedir(dirp)) && (errno == EINTR))
+        ;
+
+    return files.size();
 }
 
 

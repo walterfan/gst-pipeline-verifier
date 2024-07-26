@@ -332,11 +332,12 @@ int replace_variables(std::string &desc, std::map<std::string, std::string> &var
     int cnt = 0;
     for (auto &kv : var_map)
     {
-        size_t pos = 0;
-        while ((pos = desc.find(kv.first, pos)) != std::string::npos)
+        size_t begin_pos = 0;
+        while ((begin_pos = desc.find(kv.first, begin_pos)) != std::string::npos)
         {
-            desc.replace(pos, kv.first.size(), kv.second);
-            pos += kv.second.length();
+            size_t end_pos = desc.find(" ", begin_pos);
+            desc.replace(begin_pos, end_pos - begin_pos, kv.first + "=" + kv.second);
+            begin_pos += kv.second.length();
             cnt++;
         }
     }

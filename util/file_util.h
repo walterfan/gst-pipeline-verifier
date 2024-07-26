@@ -15,7 +15,9 @@ bool file_exists(const std::string& filename);
 config_map_t read_yaml_section(const std::string& file_path,
     const std::string& section_path);
 
-int retrieve_files(const char* szFolder, std::vector<std::string>& files);
+int retrieve_files(std::string const &folder,
+    std::string const &suffix,
+    std::vector<std::string> &files);
 
 int file2msg(const std::string &filename, std::string &msg);
 

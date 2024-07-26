@@ -88,4 +88,17 @@ pipelines:
       - hlssink2 max-files=10 location=/tmp/hls_record_%03d.ts playlist-location=/tmp/hls_playlist.m3u8 target-duration=10 t.
       - queue
       - autovideosink
-    
+
+  ds_example_1:
+    desc: deep stream example 1
+    tags: jetson
+    steps:
+      - filesrc location=/opt/nvidia/deepstream/deepstream/samples/streams/sample_720p.h264
+      - h264parse
+      - nvv4l2decoder
+      - nvstreammux0.sink_0 nvstreammux batch-size=1 width=1920 height=1080 batched-push-timeout=40000
+      - nvinfer config-file-path=/opt/nvidia/deepstream/deepstream/sources/apps/sample_apps/deepstream-test1/dstest1_pgie_config.txt
+      - nvvideoconvert
+      - nvdsosd
+      - autovideosink
+

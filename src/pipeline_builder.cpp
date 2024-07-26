@@ -22,7 +22,6 @@ namespace hefei
 
     int PipelineBuilder::init(const std::string &pipeline_name, const std::string &variables)
     {
-
         auto &pipelines_config = m_app_config.get_pipelines_config();
 
         m_pipeline_name = pipeline_name;
@@ -108,6 +107,7 @@ namespace hefei
         {
             del_element(ele_cfg_ptr->m_name);
         }
+        m_pipeline_config->clean();
         return 0;
     }
 
@@ -302,24 +302,28 @@ namespace hefei
                      leftEleCfg->m_name, (int)leftPadPresenceType,
                      rightEleCfg->m_name, (int)rightPadPresenceType);
 
-                if (leftPadPresenceType == GST_PAD_ALWAYS && rightPadPresenceType == GST_PAD_ALWAYS)
-                {
-                    bool link_ret = link_two_elements(e1, e2);
-                    if (!link_ret)
-                        failed_count++;
-                    continue;
-                }
+                // link two elements if there is no link tag in right element config
+                if (rightEleCfg->m_link_tag.empty()) {
+                    // if both src and sink pad is always, then link directly
+                    if (leftPadPresenceType == GST_PAD_ALWAYS && rightPadPresenceType == GST_PAD_ALWAYS)
+                    {
+                        bool link_ret = link_two_elements(e1, e2);
+                        if (!link_ret)
+                            failed_count++;
+                        continue;
+                    }
 
-                if (leftPadPresenceType == GST_PAD_SOMETIMES)
-                {
-                    g_signal_connect(e1, "pad-added", G_CALLBACK(on_src_pad_added), e2);
-                    DLOG("sometime pad does not link directly for element {} and {}",
-                         leftEleCfg->m_name, rightEleCfg->m_name);
-                    continue;
+                    if (leftPadPresenceType == GST_PAD_SOMETIMES)
+                    {
+                        g_signal_connect(e1, "pad-added", G_CALLBACK(on_src_pad_added), e2);
+                        DLOG("sometime pad does not link directly for element {} and {}",
+                            leftEleCfg->m_name, rightEleCfg->m_name);
+                        continue;
+                    }
                 }
-                // for request pad case, static_pad -> request_pad
-                if (!(rightEleCfg->m_link_tag.empty()))
-                {
+                else { // for request pad case, static_pad -> request_pad
+                //if (!(rightEleCfg->m_link_tag.empty()))
+
                     // get left element's src pad
                     GstPad *src_pad = gst_element_get_static_pad(e1, SRC_PAD_NAME);
                     if (!src_pad)
@@ -351,6 +355,7 @@ namespace hefei
     bool PipelineBuilder::link_two_elements(GstElement *e1, GstElement *e2)
     {
         bool ret = false;
+        //check link tag
         gchar *e1n = gst_element_get_name(e1);
         gchar *e2n = gst_element_get_name(e2);
         auto link_ret = gst_element_link(e1, e2);
