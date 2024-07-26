@@ -37,3 +37,9 @@ sudo make
 
     $ ./deepstream-test1-app <yml file>
     e.g. ./deepstream-test1-app dstest1_config.yml
+
+### code
+
+    filesrc location=/opt/nvidia/deepstream/deepstream/samples/streams/sample_720p.h264 ! \
+    h264parse ! \
+    

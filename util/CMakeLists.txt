@@ -11,4 +11,5 @@ target_link_libraries(common_util
     fmt::fmt
     spdlog::spdlog
     yaml-cpp::yaml-cpp
+    CURL::libcurl
     pthread)
