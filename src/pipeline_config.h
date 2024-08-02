@@ -106,6 +106,13 @@ struct ProbeConfig {
 
 };
 
+struct PropsConfig {
+    std::string pipeline_name;
+    std::string element_name;
+    std::string prop_key;
+    std::string prop_value;
+    std::string prop_type;
+};
 
 class AppConfig {
 public:
