@@ -22,6 +22,7 @@ if (APPLE)
     set(GTEST_LIBRARY_DIRS /opt/homebrew/Cellar/googletest/1.14.0/lib)
     include_directories(${GTEST_INCLUDE_DIRS})
     link_directories(${GTEST_LIBRARY_DIRS})
+    
 elseif(UNIX)
     pkg_search_module(GST REQUIRED gstreamer-1.0)
     include_directories(${GST_INCLUDE_DIRS})
@@ -43,7 +44,7 @@ else()
 endif(NOT spdlog_FOUND)
 
 if(civetweb_FOUND)
-    message(INFO "civetweb found!")
+    message(STATUS "civetweb found!")
 endif(civetweb_FOUND)
 
 include_directories(${PROJECT_SOURCE_DIR})
