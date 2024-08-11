@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GStreamer Pipeline Test</title>
+  <!-- Bootstrap CSS from a CDN accessible from China -->
+  <link rel="stylesheet" href="./bootstrap.min.css">
+  <style>
+    body {
+      background-color: #f8f9fa;
+      padding: 20px
+    }
+    .jumbotron {
+      background-color: #343a40;
+      color: #ffffff;
+    }
+    .card {
+      margin-bottom: 20px;
+    }
+    .quote-container {
+      margin-top: 50px;
+      text-align: center;
+    }
+    .quote-text {
+      font-style: italic;
+    }
+    .float-window {
+      display: none;
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      background-color: rgb(154, 145, 206);
+      padding: 20px;
+      border: 1px solid #ccc;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+    }
+
+  </style>
+  <script>
+
+      function post_data(action) {
+        // Get the values from the form inputs
+        const pipeline = document.getElementById('pipeline').value;
+        const element = document.getElementById('element').value;
+        const prop_name = document.getElementById('prop_name').value;
+        const prop_value = document.getElementById('prop_value').value;
+        // Create an object with the form data
+        const formData = {
+          pipeline: pipeline,
+          element: element,
+          prop_name: prop_name,
+          prop_value: prop_value
+        };
+
+        // Convert the object to a JSON string
+        const jsonData = JSON.stringify(formData);
+
+        // Define the URL of the server endpoint
+        const url = '/test';
+
+        fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: jsonData
+        })
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('Network response was not ok');
+            }
+            return response.json();
+          })
+          .then(data => {
+            document.getElementById('floatWindowText').innerHTML = JSON.stringify(data);
+            console.log('execute successful:', data);
+          })
+          .catch(error => {
+            document.getElementById('floatWindowText').innerHTML = error;
+            console.error('execute failed:', error);
+          });
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+      // 获取按钮元素
+      var set_button = document.getElementById('submit');
+
+
+      // 为按钮添加点击事件监听器
+      set_button.addEventListener('click', function() {
+          // 显示浮动窗口
+          var modal = document.getElementById('floatWindow');
+          modal.style.display = "block";
+          document.getElementById("floatWindowTitle").innerHTML = "set ai parameters";
+
+          post_data("setaiparam");
+
+          // 为关闭按钮添加事件监听器
+          var closeButton = document.getElementById('closeButton');
+          closeButton.onclick = function() {
+              modal.style.display = "none";
+          };
+        });
+
+
+  });
+  </script>
+</head>
+<body>
+
+  <div class="jumbotron text-center">
+    <h1>GStreamer Pipeline Verifier v1.0</h1>
+    <div><a href="/"> Home </a>, <a href="/test"> Test </a>, <a href="/verify"> Verify </a> </div>
+  </div>
+
+  <div class="container">
+
+    <div class="container quote-container">
+      <blockquote class="quote-text">
+        Pipeline is to process or execute a series of steps or stages in a linear sequence
+      </blockquote>
+    </div>
+    <div id="floatWindow" class="float-window">
+        <h2 id="floatWindowTitle">set parameters</h2>
+        <p id="floatWindowText"></p>
+        <button id="closeButton">关闭窗口</button>
+      </div>
+    </div>
+   <!-- pipeline verify form -->
+   <form>
+    <div class="form-group">
+      <label for="pipeline">Pipeline:</label>
+      <input type="text" id="pipeline" name="pipeline" required size="30" value="rtmp_test">
+
+      <label for="element">Element:</label>
+      <input type="text" id="element" name="element"  size="30" value="rtmpsink">
+
+      <label for="prop_name">Property Name:</label>
+      <input type="text" id="prop_name" name="prop_name"  size="30" value="location">
+
+      <label for="prop_value">Property Value:</label>
+      <textarea class="form-control" id="prop_value" maxlength="8192" name="prop_value" rows="6">{{ default_prop_value }}</textarea>
+      <button type="button" id="submit">submit</button>
+
+    </div>
+  </form>
+
+    <footer class="container quote-container">
+      <hr />
+      <p>&copy; 2010 ~ 2030 Walter Fan.</p>
+    </footer>
+
+  </div> <!-- container div end -->
+
+
+  <!-- Bootstrap JS and dependencies -->
+  <script src="./jquery.min.js"></script>
+  <script src="./popper.min.js"></script>
+  <script src="./bootstrap.min.js"></script>
+</body>
+</html>

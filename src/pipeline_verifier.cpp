@@ -26,6 +26,7 @@ do {                                                         \
 constexpr auto KEY_DEFAULT_PIPELINE = "default_pipeline";
 constexpr auto KEY_PIPELINES = "pipelines";
 constexpr auto KEY_PROBES = "probes";
+constexpr auto KEY_PROPS = "props";
 constexpr auto KEY_GENERAL = "general";
 constexpr auto KEY_LOG_FOLDER = "log_folder";
 constexpr auto KEY_LOG_NAME = "log_name";
@@ -79,18 +80,44 @@ PipelineVerifier::~PipelineVerifier()
 
 int PipelineVerifier::init(const std::string& config_file, const std::string& log_level)
 {
-    read_config_file(config_file);
+    m_config_file = config_file;
 
-    GeneralConfig &general_config = get_app_config().get_general_config();
-
-    if (!log_level.empty())
+    if (m_config_file.empty())
     {
-        general_config.log_level = str_to_int(log_level);
+        if (file_exists(CONFIG_FILE)) {
+            m_config_file = CONFIG_FILE;
+        } else {
+            m_config_file = CONFIG_FOLDER;
+            m_config_file.append("/");
+            m_config_file.append(CONFIG_FILE);
+        }
     }
-    // init logger
-    auto &logger = Logger::get_instance();
-    logger.init(general_config.log_folder, general_config.log_name, 20, 20);
-    logger.reset_level(general_config.log_level, SPDLOG_LEVEL_ERROR, SPDLOG_FLUSH_SEC);
+    try {
+        auto log_config = read_yaml_section(m_config_file, KEY_GENERAL);
+        // init logger
+        auto &logger = Logger::get_instance();
+        logger.init(log_config[KEY_LOG_FOLDER], log_config[KEY_LOG_NAME], 20, 20);
+
+        int log_level_num = 0;
+        if (!log_level.empty())
+        {
+            log_level_num = str_to_int(log_config[KEY_LOG_LEVEL]);
+        } else {
+            log_level_num = str_to_int(log_level);
+        }
+
+        logger.reset_level(log_level_num, SPDLOG_LEVEL_ERROR, SPDLOG_FLUSH_SEC);
+
+
+        int ret = read_config_file(m_config_file);
+        if (ret < 0) {
+            ELOG("configuration is incorrect.");
+            return ret;
+        }
+    } catch (const std::exception &e) {
+        std::cerr << "PipelineVerifier::init read config exception: " << e.what() << std::endl;
+        return -1;
+    }
 
     // set gst log handler
     guint major, minor, micro, nano = 0;
@@ -136,12 +163,18 @@ int PipelineVerifier::read_pipeline_config(const std::string& key, const YAML::N
         auto pipeline_desc = pipelineNode["desc"];
         auto pipeline_steps = pipelineNode["steps"];
 
+        auto pipeline_props = pipelineNode["props"];
+
         auto vec = pipeline_steps.as<std::vector<std::string>>();
 
-        m_app_config.get_pipelines_config().emplace(key, vec,
+        auto pipeline_config_ptr = m_app_config.get_pipelines_config().emplace(key, vec,
             pipeline_desc.as<std::string>(), pipeline_tags.as<std::string>());
-    } else if (pipelineNode.Type() == YAML::NodeType::Sequence)
-    {
+
+        if (pipeline_config_ptr && pipeline_props) {
+            pipeline_config_ptr->m_props = pipeline_props.as<std::string>();
+        }
+
+    } else if (pipelineNode.Type() == YAML::NodeType::Sequence) {
         auto vec = pipelineNode.as<std::vector<std::string>>();
         m_app_config.get_pipelines_config().emplace(key, vec);
     } else {
@@ -186,8 +219,36 @@ int PipelineVerifier::read_probe_config(YAML::Node &config)
             probeConfigItem.probe_pipeline_name = vals["probe_pipeline"];
             probeConfigItem.probe_element_name = vals["probe_element"];
             probeConfigItem.probe_pad_name = vals["probe_pad"];
+            probeConfigItem.probe_callback_name = vals["probe_callback"];
             probeConfigItem.probe_type = str_to_int(vals["probe_type"]);
             m_app_config.get_probe_config().add_probe_config_item(probeConfigItem);
+            DLOG("add_probe_config_item for {} on {}'{} by {}",
+                probeConfigItem.probe_pipeline_name, probeConfigItem.probe_element_name,
+                probeConfigItem.probe_pad_name, probeConfigItem.probe_callback_name);
+        }
+        return 0;
+    }
+    return -1;
+}
+
+int PipelineVerifier::read_props_config(YAML::Node &config)
+{
+    if (config[KEY_PROPS])
+    {
+        YAML::Node childNode = config[KEY_PROPS];
+        YAML::const_iterator it = childNode.begin();
+        for (; it != childNode.end(); ++it)
+        {
+            std::string key = it->first.as<std::string>();
+            std::map<std::string, std::string> vals = it->second.as<std::map<std::string, std::string>>();
+            PropConfigItem propConfigItem;
+            propConfigItem.prop_key = key;
+            propConfigItem.pipeline_name = vals["pipeline_name"];
+            propConfigItem.element_name = vals["element_name"];
+            propConfigItem.prop_name = vals["prop_name"];
+            propConfigItem.prop_value = vals["prop_value"];
+            //std::cout << "add prop: " << propConfigItem.prop_name << "=" << propConfigItem.prop_value << std::endl;
+            m_app_config.get_props_config().add_prop_config_item(propConfigItem);
         }
         return 0;
     }
@@ -196,34 +257,22 @@ int PipelineVerifier::read_probe_config(YAML::Node &config)
 // !! Do not write log in read config because logger need configuration for initiation
 int PipelineVerifier::read_config_file(const std::string config_file)
 {
-    m_config_file = config_file;
 
-    if (m_config_file.empty())
-    {
-        if (file_exists(CONFIG_FILE)) {
-            m_config_file = CONFIG_FILE;
-        }
-        else {
-            m_config_file = CONFIG_FOLDER;
-            m_config_file.append("/");
-            m_config_file.append(CONFIG_FILE);
-        }
-    }
-    int ret = 0;
-    try {
-        YAML::Node config = YAML::LoadFile(m_config_file);
-
-        ret = read_general_config(config);
-        ret += read_probe_config(config);
-        ret += read_pipelines_config(config);
-
-        if (directory_exists(CONFIG_FOLDER))
-        {
-            read_all_config_files(CONFIG_FOLDER);
-        }
-    } catch (const std::exception &e) {
-        std::cerr << "Configuration error: " << e.what() << std::endl;
+    if (!endswith(m_config_file, "yaml") && !endswith(m_config_file, "yml")) {
+        std::cerr << "only support yaml/yml format for now: " << m_config_file << std::endl;
         return -1;
+    }
+
+    YAML::Node config = YAML::LoadFile(config_file);
+    
+    auto ret = read_general_config(config);
+    ret += read_probe_config(config);
+    ret += read_pipelines_config(config);
+    ret += read_props_config(config);
+
+    if (directory_exists(CONFIG_FOLDER))
+    {
+        read_all_config_files(CONFIG_FOLDER);
     }
 
     return ret;
@@ -232,7 +281,7 @@ int PipelineVerifier::read_config_file(const std::string config_file)
 int PipelineVerifier::read_all_config_files(const char *szFolder)
 {
     std::vector<std::string> config_files;
-    int cnt = retrieve_files(szFolder, ".yaml", config_files);
+    int cnt = retrieve_files(szFolder, "yaml", config_files);
     if (cnt <= 0)
     {
         std::cerr << "no config files under " << szFolder << std::endl;
@@ -242,9 +291,10 @@ int PipelineVerifier::read_all_config_files(const char *szFolder)
     {
         std::string config_file(szFolder);
         config_file = config_file + "/" + file;
-        
-        YAML::Node config = YAML::LoadFile(config_file);
-        read_pipelines_config(config);
+        if (endswith(config_file, ".yaml") || endswith(config_file, ".yml")) {
+            YAML::Node config = YAML::LoadFile(config_file);
+            read_pipelines_config(config);
+        }
         
     }
     return cnt;
@@ -266,7 +316,7 @@ void PipelineVerifier::list_pipelines(const std::string &pipeline_name)
         }
         cout << (++i) << ". " << it->first << ": " << endl;
         auto &vec = it->second->m_steps;
-        auto cnt = vec.size();
+        int cnt = vec.size();
         for (int i = 0; i < cnt; ++i)
         {
             if (i > 0)
@@ -300,8 +350,14 @@ int PipelineVerifier::start_web_server(const char *doc_root, int port)
                              "listening_ports", szPort, NULL};
     CivetServer server(options);
 
-    TestHandler handler;
-    server.addHandler("/test", handler);
+    TestHandler test_handler(m_app_config);
+    server.addHandler("/test", test_handler);
+    test_handler.register_pipeline_setter([&](const PropConfigItem& prop_config) {
+        ILOG("pipeline setter {}={}", prop_config.prop_name, prop_config.prop_value);
+        auto ret = change_pipeline(prop_config);
+        ILOG("pipeline setter end with {}", ret);
+        return ret;
+    });
 
     ExitHandler exit_handler;
     server.addHandler("/exit", exit_handler);
@@ -334,7 +390,7 @@ void PipelineVerifier::fork_web_server(int http_port, bool forced) {
     auto general_config = m_app_config.get_general_config();
     if (!general_config.http_enabled && !forced)
     {
-        DLOG("not enable http server");
+        ILOG("not enable http server");
         return;
     }
 
@@ -358,18 +414,28 @@ void PipelineVerifier::join_web_server()
 
 
 int PipelineVerifier::run_pipeline(const std::string pipeline_name, const std::string variables) {
-    PipelineBuilder builder(m_app_config);
-    int ret = builder.init(pipeline_name, variables);
+    m_pipeline_builder = std::make_shared<PipelineBuilder>(m_app_config);
+    int ret = m_pipeline_builder->init(pipeline_name, variables);
     CHECK_VALUE("pipeline init, ret={}",  ret, 0);
-    ret = builder.build();
+    ret = m_pipeline_builder->build();
     CHECK_VALUE("pipeline build, ret={}", ret, 0);
-    ret = builder.start();
+    ret = m_pipeline_builder->start();
     CHECK_VALUE("pipeline start, ret={}", ret, 0);
-    ret = builder.stop();
+    ret = m_pipeline_builder->stop();
     CHECK_VALUE("pipeline stop, ret={}",  ret, 0);
-    ret = builder.clean();
+    ret = m_pipeline_builder->clean();
     CHECK_VALUE("pipeline clean, ret={}", ret, 0);
     return ret;
 }
+
+int PipelineVerifier::change_pipeline(const PropConfigItem& propConfigItem) {
+    if (!m_pipeline_builder) {
+        WLOG("pipeline {} have not been setup", propConfigItem.pipeline_name);
+        return -1;
+    }
+
+    return m_pipeline_builder->set_prop(propConfigItem);
+}
+
 
 } // namespace hefei

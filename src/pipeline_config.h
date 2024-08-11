@@ -51,6 +51,9 @@ struct PipelineConfig {
     // pipeline tags
     std::string m_tags;
 
+    //properties for the pipeline
+    std::string m_props;
+
     //elements' description
     std::vector<std::string> m_steps;
 
@@ -74,7 +77,7 @@ struct PipelinesConfig
 
     PipelineConfigPtr get_pipeline_config(const std::string &name);
     std::map<std::string, PipelineConfigPtr> m_pipelines;
-    void emplace(const std::string &name, std::vector<std::string> &steps,
+    PipelineConfigPtr emplace(const std::string &name, std::vector<std::string> &steps,
                               const std::string &desc = "", const std::string &tags = "");
 };
 
@@ -95,6 +98,7 @@ struct ProbeConfigItem {
     std::string probe_pipeline_name;
     std::string probe_element_name;
     std::string probe_pad_name;
+    std::string probe_callback_name;
     int probe_type;
 };
 
@@ -106,12 +110,22 @@ struct ProbeConfig {
 
 };
 
-struct PropsConfig {
+struct PropConfigItem {
+    std::string prop_key;
     std::string pipeline_name;
     std::string element_name;
-    std::string prop_key;
+    std::string prop_name;
     std::string prop_value;
-    std::string prop_type;
+    int prop_type = 0; //string
+};
+
+struct PropsConfig {
+    bool has_prop_config_item(const std::string& prop_key);
+    PropConfigItem& get_prop_config_item(const std::string& prop_key);
+    void add_prop_config_item(const PropConfigItem& PropConfigItem);
+    std::vector<std::string> get_prop_keys(const std::string& pipeline_name);
+
+    std::map<std::string, PropConfigItem> config_items;
 };
 
 class AppConfig {
@@ -119,13 +133,21 @@ public:
     GeneralConfig& get_general_config() { return m_general_config; };
     ProbeConfig& get_probe_config()  { return m_probe_config; };
     PipelinesConfig &get_pipelines_config() { return m_pipelines_config; }
+    PropsConfig &get_props_config() { return m_props_config; }
 
-    bool has_probe_config_item(const std::string& item_name) { return m_probe_config.has_probe_config_item(item_name); }
-    ProbeConfigItem& get_probe_config_item(const std::string& item)  { return m_probe_config.get_probe_config_item(item); };
+    bool has_probe_config_item(const std::string& item_name)
+        { return m_probe_config.has_probe_config_item(item_name); }
+
+    ProbeConfigItem& get_probe_config_item(const std::string& item)
+        { return m_probe_config.get_probe_config_item(item); };
+
+    bool has_prop_config_item(const std::string& item_name)
+        { return m_props_config.has_prop_config_item(item_name); }
+
 private:
     GeneralConfig m_general_config;
     ProbeConfig m_probe_config;
-    //pipelines_config_t m_pipeline_config;
+    PropsConfig m_props_config;
     PipelinesConfig m_pipelines_config;
 };
 

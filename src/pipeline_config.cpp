@@ -40,14 +40,14 @@ void ElementConfig::insert_prop(const std::string& key, const std::string& value
         return;
     }
     m_props[key] = value;
-    DLOG("key={}, value={}", key, value);        
+    DLOG("key={}, value={}", key, value);
 }
 
 void ElementConfig::parse_prop(const std::string& token) {
     if (token.empty()) {
         return;
     }
-    
+
     size_t pos = 0;
     if ((pos = token.find("=")) != string::npos) {
         insert_prop(trim_copy(token.substr(0, pos)), trim_copy(token.substr(pos+1)));
@@ -171,7 +171,7 @@ int PipelineConfig::check_elements_name()
 
 std::string PipelineConfig::dump_pipeline_line() {
     std::ostringstream ss;
-    auto cnt = m_steps.size();
+    int cnt = m_steps.size();
     for (int i = 0; i < cnt; ++i)
     {
         if (i > 0)
@@ -183,12 +183,13 @@ std::string PipelineConfig::dump_pipeline_line() {
             ss << "  gst-launch-1.0 ";
         }
 
-        ss << m_steps[i];
+        ss << m_steps[i] << " \\<br/>";
 
     }
     return ss.str();
 }
 
+// --- probe config ---
 bool ProbeConfig::has_probe_config_item(const std::string &item_name)
 {
     return config_items.find(item_name) != config_items.end();
@@ -204,10 +205,37 @@ void ProbeConfig::add_probe_config_item(const ProbeConfigItem &probeConfigItem)
     config_items[probeConfigItem.probe_pipeline_name] = probeConfigItem;
 }
 
-void PipelinesConfig::emplace(const std::string &name, std::vector<std::string> &steps,
-                                           const std::string &desc, const std::string &tags)
+// --- props config ----
+
+bool PropsConfig::has_prop_config_item(const std::string &prop_key)
 {
-    m_pipelines.emplace(name, std::make_shared<PipelineConfig>(name, steps, desc, tags));
+    return config_items.find(prop_key) != config_items.end();
+}
+
+PropConfigItem &PropsConfig::get_prop_config_item(const std::string &prop_key)
+{
+    return config_items[prop_key];
+}
+
+void PropsConfig::add_prop_config_item(const PropConfigItem &propConfigItem)
+{
+    config_items[propConfigItem.prop_key] = propConfigItem;
+}
+
+std::vector<std::string> PropsConfig::get_prop_keys(const std::string& pipeline_name) {
+    std::vector<std::string> keys;
+
+
+    return keys;
+
+}
+// --- pipeline config ---
+
+PipelineConfigPtr PipelinesConfig::emplace(const std::string &name, std::vector<std::string> &steps,
+                                           const std::string &desc, const std::string &tags) {
+    auto pipeline_config_ptr = std::make_shared<PipelineConfig>(name, steps, desc, tags);
+    m_pipelines.emplace(name, pipeline_config_ptr);
+    return pipeline_config_ptr;
 }
 
 PipelineConfigPtr PipelinesConfig::get_pipeline_config(const std::string &name) {

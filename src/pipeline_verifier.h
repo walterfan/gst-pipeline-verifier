@@ -3,11 +3,12 @@
 #include <memory>
 #include "yaml-cpp/yaml.h"
 #include "pipeline_config.h"
+#include "pipeline_builder.h"
 
 namespace hefei {
 
 class PipelineVerifier {
-public:
+public:    
     PipelineVerifier(int argc, char *argv[]);
     virtual ~PipelineVerifier();
 
@@ -25,7 +26,9 @@ public:
 
     void join_web_server();
 
-    int run_pipeline(const std::string pipeline_name, const std::string variables);
+    int run_pipeline(const std::string pipeline_name, const std::string variables); 
+
+    int change_pipeline(const PropConfigItem& propConfigItem);
 
 private:
     int start_web_server(const char *doc_root, int port);
@@ -33,10 +36,13 @@ private:
     int read_pipelines_config(YAML::Node &config);
     int read_general_config(YAML::Node &config);
     int read_probe_config(YAML::Node &config);
+    int read_props_config(YAML::Node &config);
 
     std::string m_config_file;
     AppConfig m_app_config;
     std::unique_ptr<std::thread> m_web_thread;
+
+    std::shared_ptr<PipelineBuilder> m_pipeline_builder;
 };
 
 }// namespace hefei

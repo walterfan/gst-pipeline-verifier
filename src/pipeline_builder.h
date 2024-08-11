@@ -11,6 +11,7 @@
 #include "file_util.h"
 #include "pipeline_config.h"
 
+
 namespace hefei {
 
 enum class BuildProgress {
@@ -36,6 +37,7 @@ public:
 
     AppConfig& get_app_config() { return m_app_config; }
     int add_probe(const ProbeConfigItem& probe_config_item);
+    int set_prop(const PropConfigItem& prop_config);
 
 private:
 
@@ -57,6 +59,7 @@ private:
     static void on_sink_pad_added(GstElement *element, GstPad *pad, gpointer data);
 
     static GstPadProbeReturn probe_pad_callback(GstPad *pad, GstPadProbeInfo *info, gpointer user_data);
+    static GstPadProbeReturn probe_meta_data(GstPad *pad, GstPadProbeInfo *info, gpointer user_data);
 
     void on_bus_msg_eos();
     void on_bus_msg_error(GstMessage* msg);
@@ -72,7 +75,6 @@ private:
     GstBus* m_bus;
     GMainLoop* m_loop;
     GstElement* m_pipeline;
-    
     std::string m_pipeline_name;
     std::shared_ptr<PipelineConfig> m_pipeline_config;
 

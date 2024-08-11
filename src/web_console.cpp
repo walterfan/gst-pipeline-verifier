@@ -17,64 +17,119 @@ using json = nlohmann::json;
 
 namespace hefei {
 
-bool TestHandler::handleGet(CivetServer *server, struct mg_connection *conn) {
-    const struct mg_request_info *req_info = mg_get_request_info(conn);
-    mg_printf(conn,
-                "HTTP/1.1 200 OK\r\nContent-Type: "
-                "text/html\r\nConnection: close\r\n\r\n");
+    static int send_json(struct mg_connection *conn, int status, const char* json_str)
+{
+    size_t json_str_len = strlen(json_str);
 
-    mg_printf(conn, "<html><body>\n");
-    mg_printf(conn, "<h2>Welcome</h2>\n");
+    /* Send HTTP message header (+1 for \n) */
+    if (status >=200 && status < 400) {
+        mg_send_http_ok(conn, "application/json; charset=utf-8", json_str_len + 1);
+    } else {
+        mg_send_http_error(conn, status, "%s", http_response_status(status));
+    }
+
+
+    /* Send HTTP message content */
+    mg_write(conn, json_str, json_str_len);
+
+    /* Add a newline. This is not required, but the result is more
+        * human-readable in a debugger. */
+    mg_write(conn, "\n", 1);
+
+    return (int)json_str_len;
+}
+
+static void respond_json(int result, const std::string& desc, struct mg_connection *conn)
+{
+    nlohmann::json json_obj;
+    json_obj["result"] = result;
+    json_obj["desc"] = desc;
+    send_json(conn, result,  json_obj.dump().c_str());
+}
+
+
+std::string TestHandler::get_prop_value(const std::string& prop_key) {
+    PropsConfig& props_config = m_app_config.get_props_config();
+    PropConfigItem& prop_item = props_config.get_prop_config_item(prop_key);
+    return prop_item.prop_value;
+}
+
+bool TestHandler::handleGet(CivetServer *server, struct mg_connection *conn) {
+    //const struct mg_request_info *req_info = mg_get_request_info(conn);
     mg_printf(conn,
-                "<p>The request was:<br><pre>%s %s HTTP/%s</pre></p>\n",
-                req_info->request_method,
-                req_info->request_uri,
-                req_info->http_version);
-    mg_printf(conn, "</body></html>\n");
+              "HTTP/1.1 200 OK\r\nContent-Type: "
+              "text/html\r\nConnection: close\r\n\r\n");
+
+
+    std::string file_name = "./doc/test.html";
+    std::string file_content;
+    file2msg(file_name, file_content);
+
+    std::string oldContent = "{{ default_prop_value }}";
+    std::string newContent = get_prop_value("algo_infer_test_1");
+
+    // Replace the old content with the new content
+    size_t pos = file_content.find(oldContent);
+    while (pos != std::string::npos)
+    {
+        file_content.replace(pos, oldContent.length(), newContent);
+        pos = file_content.find(oldContent, pos + newContent.length());
+    }
+
+    mg_printf(conn, "%s", file_content.c_str());
     return true;
 }
 
 bool TestHandler::handlePost(CivetServer *server, struct mg_connection *conn)
 {
-    /* Handler may access the request info using mg_get_request_info */
     const struct mg_request_info *req_info = mg_get_request_info(conn);
-    long long rlen, wlen;
-    long long nlen = 0;
+
     long long tlen = req_info->content_length;
-    char buf[1024];
 
-    mg_printf(conn,
-                "HTTP/1.1 200 OK\r\nContent-Type: "
-                "text/html\r\nConnection: close\r\n\r\n");
+    std::vector<unsigned char> buf(tlen);
+    unsigned char *buffer = buf.data();
 
-    mg_printf(conn, "<html><body>\n");
-    mg_printf(conn, "<h2>This is the Foo POST handler!!!</h2>\n");
-    mg_printf(conn,
-                "<p>The request was:<br><pre>%s %s HTTP/%s</pre></p>\n",
-                req_info->request_method,
-                req_info->request_uri,
-                req_info->http_version);
-    mg_printf(conn, "<p>Content Length: %li</p>\n", (long)tlen);
-    mg_printf(conn, "<pre>\n");
+    size_t num_bytes = mg_read(conn, buffer, tlen);
 
-    while (nlen < tlen) {
-        rlen = tlen - nlen;
-        if (rlen > sizeof(buf)) {
-            rlen = sizeof(buf);
+    std::string post_data(reinterpret_cast<char *>(buffer), num_bytes);
+
+    DLOG("got {}", post_data);
+    try {
+        nlohmann::json json_data = nlohmann::json::parse(post_data);
+
+        std::string pipeline = json_data["pipeline"].get<std::string>();
+        std::string element = json_data["element"].get<std::string>();
+        std::string prop_name = json_data["prop_name"].get<std::string>();
+        std::string prop_value = json_data["prop_value"].get<std::string>();
+        if (pipeline.empty() || element.empty() || prop_name.empty() || prop_value.empty()) {
+            respond_json(400, "required text is empty", conn);
+            return true;
         }
-        rlen = mg_read(conn, buf, (size_t)rlen);
-        if (rlen <= 0) {
-            break;
+
+        PropConfigItem propConfigItem;
+        //propConfigItem.prop_key = ;
+        propConfigItem.pipeline_name = pipeline;
+        propConfigItem.element_name = element;
+        propConfigItem.prop_name = prop_name;
+        propConfigItem.prop_value = prop_value;
+
+        DLOG("pipeline setter, element={}, prop_name={}", propConfigItem.element_name, propConfigItem.prop_name);
+        if (m_pipeline_setter) {
+            int ret = m_pipeline_setter(propConfigItem);
+            if (ret == 0) {
+                respond_json(200, "pipeline set succeed", conn);
+            } else {
+                respond_json(400, "pipeline set failed", conn);
+            }
+        } else {
+            respond_json(500, "m_pipeline_setter have not registered", conn);
         }
-        wlen = mg_write(conn, buf, (size_t)rlen);
-        if (wlen != rlen) {
-            break;
-        }
-        nlen += wlen;
+
+    } catch (const std::exception &e) {
+        ELOG("pipeline exception: {}", e.what());
+        respond_json(400, "pipeline error", conn);
     }
 
-    mg_printf(conn, "\n</pre>\n");
-    mg_printf(conn, "</body></html>\n");
 
     return true;
 }
@@ -114,7 +169,7 @@ bool VerifyHandler::handleGet(CivetServer *server, struct mg_connection *conn)
               "HTTP/1.1 200 OK\r\nContent-Type: "
               "text/html\r\nConnection: close\r\n\r\n");
 
-    
+
     std::string file_name = "./doc/pipelines.html";
     std::string file_content;
     file2msg(file_name, file_content);
@@ -132,36 +187,6 @@ bool VerifyHandler::handleGet(CivetServer *server, struct mg_connection *conn)
 
     mg_printf(conn, "%s", file_content.c_str());
     return true;
-}
-
-static int send_json(struct mg_connection *conn, int status, const char* json_str)
-{
-    size_t json_str_len = strlen(json_str);
-
-    /* Send HTTP message header (+1 for \n) */
-    if (status >=200 && status < 400) {
-        mg_send_http_ok(conn, "application/json; charset=utf-8", json_str_len + 1);
-    } else {
-        mg_send_http_error(conn, status, "%s", http_response_status(status));
-    }
-
-
-    /* Send HTTP message content */
-    mg_write(conn, json_str, json_str_len);
-
-    /* Add a newline. This is not required, but the result is more
-        * human-readable in a debugger. */
-    mg_write(conn, "\n", 1);
-
-    return (int)json_str_len;
-}
-
-static void respond_json(int result, const std::string& desc, struct mg_connection *conn)
-{
-    nlohmann::json json_obj;
-    json_obj["result"] = result;
-    json_obj["desc"] = desc;
-    send_json(conn, result,  json_obj.dump().c_str());
 }
 
 bool VerifyHandler::handlePost(CivetServer *server, struct mg_connection *conn) {

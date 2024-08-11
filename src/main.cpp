@@ -40,8 +40,10 @@ int verify_pipeline(int argc, char *argv[], void* param=nullptr) {
     auto pipeline_name = parser.getOptionValue("p");
     
     auto verifier = std::make_unique<PipelineVerifier>(argc, argv);
-    verifier->init(parser.getOptionValue("f"), parser.getOptionValue("d"));
-
+    int ret = verifier->init(parser.getOptionValue("f"), parser.getOptionValue("d"));
+    if (ret < 0) {
+        return ret;
+    }
     //handle arguments
     if (parser.hasOption("v")) {
         std::cout << "Version: " << VERSION << std::endl;
@@ -63,12 +65,11 @@ int verify_pipeline(int argc, char *argv[], void* param=nullptr) {
 
     auto variables = parser.getOptionValue("r");
 
-    if (!pipeline_name.empty()) {
-        return verifier->run_pipeline(pipeline_name, variables);
+    if (pipeline_name.empty()) {
+        return 0;
     }
 
-    usage(argv);
-    return 0;
+    return verifier->run_pipeline(pipeline_name, variables);
 }
 
 int main (int argc, char *argv[])

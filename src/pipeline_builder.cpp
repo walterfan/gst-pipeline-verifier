@@ -6,7 +6,24 @@
 #include <vector>
 #include "yaml-cpp/yaml.h"
 
+
+#ifdef OPENCV_SUPPORT
+#include "opencv2/opencv.hpp"
+#include "opencv2/imgproc/types_c.h"
+#endif
+
+#ifdef NV_DS_SUPPORT
+#include "gstnvdsmeta.h"
+#include "nvbufsurface.h"
+#endif
+
 using namespace std;
+
+typedef struct _ElementLinkData {
+    GstElement *right_element = nullptr;
+    std::string right_link_tag = "";
+} ElementLinkData;
+
 
 namespace hefei
 {
@@ -116,6 +133,10 @@ namespace hefei
         if (m_app_config.has_probe_config_item(m_pipeline_name))
         {
             add_probe(m_app_config.get_probe_config_item(m_pipeline_name));
+        }
+        // the pipeline has props keys
+        if (!(m_pipeline_config->m_props.empty())) {
+            //get prop keys, and set props one by one
         }
 
         std::string dot_file = m_pipeline_name + "_graph";
@@ -315,14 +336,28 @@ namespace hefei
 
                     if (leftPadPresenceType == GST_PAD_SOMETIMES)
                     {
-                        g_signal_connect(e1, "pad-added", G_CALLBACK(on_src_pad_added), e2);
+                        ElementLinkData* link_data = new ElementLinkData();
+                        link_data->right_element = e2;
+                        link_data->right_link_tag = rightEleCfg->m_link_tag;
+
+                        g_signal_connect(e1, "pad-added", G_CALLBACK(on_src_pad_added), link_data);
                         DLOG("sometime pad does not link directly for element {} and {}",
                             leftEleCfg->m_name, rightEleCfg->m_name);
                         continue;
                     }
                 }
-                else { // for request pad case, static_pad -> request_pad
-                //if (!(rightEleCfg->m_link_tag.empty()))
+                else { // rightEleCfg->m_link_tag not empty
+
+                    if (leftPadPresenceType == GST_PAD_SOMETIMES)
+                    {
+                        ElementLinkData* link_data = new ElementLinkData();
+                        link_data->right_element = e2;
+                        link_data->right_link_tag = rightEleCfg->m_link_tag;
+                        g_signal_connect(e1, "pad-added", G_CALLBACK(on_src_pad_added), link_data);
+                        DLOG("sometime pad does not link directly for element {} and {}",
+                            leftEleCfg->m_name, rightEleCfg->m_name);
+                        continue;
+                    }
 
                     // get left element's src pad
                     GstPad *src_pad = gst_element_get_static_pad(e1, SRC_PAD_NAME);
@@ -330,6 +365,7 @@ namespace hefei
                     {
                         src_pad = gst_element_get_static_pad(e1, SRC_PAD_NAME_U);
                     }
+
                     // get right element's sink pad by link tag
                     auto right_pad_name = get_pad_name_from_link_tag(rightEleCfg->m_link_tag);
                     DLOG("right element's link tag: {}, right_pad_name={}", rightEleCfg->m_link_tag, right_pad_name);
@@ -453,16 +489,33 @@ namespace hefei
     {
         gchar *src_pad_name = gst_pad_get_name(pad);
         gchar *left_ele_name = gst_element_get_name(element);
-        GstElement *other = (GstElement *)data;
-        gchar *right_ele_name = gst_element_get_name(other);
-        // TODO: refactoring to link to
-        auto ret = gst_element_link(element, other);
-        DLOG("A new src pad {} was created for {} link to {}, ret={}",
-             src_pad_name, left_ele_name, right_ele_name, ret);
+
+        ElementLinkData *link_data = (ElementLinkData *)data;
+        GstElement* right_element = link_data->right_element;
+
+        gchar *right_ele_name = gst_element_get_name(right_element);
+
+        if (link_data->right_link_tag.empty()) {
+            auto ret = gst_element_link(element, right_element);
+            DLOG("A new src pad {} was created for {} link to {}, ret={}", src_pad_name, left_ele_name, right_ele_name, ret);
+        } else {
+            DLOG("right element's link tag: {}", link_data->right_link_tag);
+            auto right_pad_name = get_pad_name_from_link_tag(link_data->right_link_tag);
+
+            GstPad *sink_pad = gst_element_get_request_pad(right_element, right_pad_name.c_str());
+            if (!sink_pad)
+            {
+                sink_pad = gst_element_get_static_pad(right_element, right_pad_name.c_str());
+            }
+
+            int ret = (int)gst_pad_link(pad, sink_pad);
+            DLOG("A new src pad {} was created for {} link to {}, ret={}", src_pad_name, left_ele_name, right_pad_name, ret);
+        }
 
         g_free(src_pad_name);
         g_free(left_ele_name);
         g_free(right_ele_name);
+        delete link_data;
     }
 
     void PipelineBuilder::on_sink_pad_added(GstElement *element, GstPad *pad, gpointer data)
@@ -563,7 +616,7 @@ namespace hefei
         guint64 timestamp = 0;
         guint64 duration = 0;
         gst_message_parse_qos(msg, &live, &running_time, &stream_time, &timestamp, &duration);
-        DLOG("[stats] element {}' qos: live={}, running_time={}, stream_time={}, timestamp={}, duration={}",
+        TLOG("[stats] element {}' qos: live={}, running_time={}, stream_time={}, timestamp={}, duration={}",
              GST_OBJECT_NAME(msg->src), live, running_time, stream_time, timestamp, duration);
 
         // gst_message_parse_qos_stats
@@ -571,7 +624,7 @@ namespace hefei
         guint64 processed = 0;
         guint64 dropped = 0;
         gst_message_parse_qos_stats(msg, &format, &processed, &dropped);
-        DLOG("[stats] element {}' qos stats: format={}, oricessed={}, dropped={}",
+        TLOG("[stats] element {}' qos stats: format={}, oricessed={}, dropped={}",
              GST_OBJECT_NAME(msg->src), (int)format, processed, dropped);
 
         // gst_message_parse_qos_values
@@ -580,7 +633,7 @@ namespace hefei
         gint quality = 0;
 
         gst_message_parse_qos_values(msg, &jitter, &proportion, &quality);
-        DLOG("[stats] element {}' qos values: jitter={}, proportion={}, quality={}",
+        TLOG("[stats] element {}' qos values: jitter={}, proportion={}, quality={}",
              GST_OBJECT_NAME(msg->src), jitter, proportion, quality);
     }
 
@@ -604,8 +657,36 @@ namespace hefei
              GST_OBJECT_NAME(msg->src), (int)mode, avg_in, avg_out, buffering_left);
     }
 
-    GstPadProbeReturn PipelineBuilder::probe_pad_callback(GstPad *pad, GstPadProbeInfo *info, gpointer user_data)
-    {
+    GstPadProbeReturn PipelineBuilder::probe_meta_data(GstPad *pad, GstPadProbeInfo *info, gpointer user_data) {
+        auto *gst_buf = (GstBuffer *)info->data;
+        #ifdef NV_DS_SUPPORT
+        NvDsMetaList *l_frame = nullptr;
+        NvDsMetaList *l_user_meta = nullptr;
+        NvDsUserMeta *user_meta = nullptr;
+        gchar *user_meta_data = nullptr;
+        std::string msg;
+        std::string body;
+        std::string automatic;
+        NvDsBatchMeta *batch_meta = gst_buffer_get_nvds_batch_meta(gst_buf);
+
+        for (l_frame = batch_meta->frame_meta_list; l_frame != nullptr;  l_frame = l_frame->next)
+        {
+            auto *frame_meta = (NvDsFrameMeta *)(l_frame->data);
+            /* Validate user meta */
+            for (l_user_meta = frame_meta->frame_user_meta_list; l_user_meta != nullptr;
+                l_user_meta = l_user_meta->next)
+            {
+                user_meta = (NvDsUserMeta *)(l_user_meta->data);
+                user_meta_data = (gchar *)user_meta->user_meta_data;
+                ILOG("user_meta_data={}", user_meta_data);
+
+            }
+        }
+        #endif
+        return GST_PAD_PROBE_OK;
+    }
+
+    GstPadProbeReturn PipelineBuilder::probe_pad_callback(GstPad *pad, GstPadProbeInfo *info, gpointer user_data) {
 
         PipelineBuilder *thiz = (PipelineBuilder *)user_data;
         if (thiz)
@@ -667,10 +748,12 @@ namespace hefei
 
     int PipelineBuilder::add_probe(const ProbeConfigItem &probe_config_item)
     {
-        DLOG("Add probe for {}'{}, pad name={}",
+        DLOG("Add probe for {}'{}, pad name={}, callback={}",
              probe_config_item.probe_pipeline_name,
              probe_config_item.probe_element_name,
-             probe_config_item.probe_pad_name);
+             probe_config_item.probe_pad_name,
+             probe_config_item.probe_callback_name);
+
         GstElement *element = gst_bin_get_by_name((GstBin *)m_pipeline, probe_config_item.probe_element_name.c_str());
         if (!element)
         {
@@ -684,9 +767,19 @@ namespace hefei
             return -2;
         }
 
-        gulong probe_id = gst_pad_add_probe(probe_pad,
-                                            (GstPadProbeType)probe_config_item.probe_type,
-                                            probe_pad_callback, this, NULL);
+        gulong probe_id = 0;
+
+        if (probe_config_item.probe_callback_name == "probe_meta_data") {
+            probe_id = gst_pad_add_probe(probe_pad,
+                GST_PAD_PROBE_TYPE_BUFFER,
+                probe_meta_data, this, NULL);
+        } else {
+            probe_id = gst_pad_add_probe(probe_pad,
+                (GstPadProbeType)probe_config_item.probe_type,
+                probe_pad_callback, this, NULL);
+
+        }
+
         gst_object_unref(probe_pad);
 
         DLOG("Add probe probe_id={}", probe_id);
@@ -697,5 +790,17 @@ namespace hefei
     {
         m_build_progress = progress;
     }
+
+    int PipelineBuilder::set_prop(const PropConfigItem& prop_config) {
+        GstElement *element = get_element(prop_config.element_name);
+        if (!element) {
+            ELOG("set_prop but not found element {}", prop_config.element_name);
+            return -1;
+        }
+        DLOG("set element {}'s {}={}", prop_config.element_name, prop_config.prop_name, prop_config.prop_value);
+        g_object_set(G_OBJECT(element), prop_config.prop_name.c_str(), prop_config.prop_value.c_str(), NULL);
+        return 0;
+    }
+
 
 } // namespace hefei

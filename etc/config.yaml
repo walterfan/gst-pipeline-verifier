@@ -5,7 +5,7 @@ general:
   # log level - 0:trace, 1: debug, 2: info ...
   log_level: 2
   # gstreamer log level - GST_LEVEL_FIXME=3,GST_LEVEL_INFO=4,..
-  debug_threshold: 3 
+  debug_threshold: 3
   http_enabled: 1
   http_port: 9090
   web_root: ./doc
@@ -102,11 +102,28 @@ probes:
   mp4_play_probe:
     probe_pipeline: mp4_play
     probe_element: timeoverlay
-    probe_pad: src 
+    probe_pad: src
     #GST_PAD_PROBE_TYPE_ALL_BOTH (1776) – probe buffers
     probe_type: 1776
+    probe_callback: probe_pad_callback
+
   video_test_probe:
     probe_pipeline: video_test
     probe_element: timeoverlay
     probe_pad: src
     probe_type: 1776
+    probe_callback: probe_pad_callback
+
+  rtmp_test_probe:
+    probe_pipeline: rtmp_test
+    probe_element: rtmpsink
+    probe_pad: sink
+    probe_type: 1776
+    probe_callback: probe_meta_data
+
+props:
+  rtmp_test_0:
+    pipeline_name: rtmp_test
+    element_name: rtmpsink
+    prop_name: location
+    prop_value: rtmp://www.fanyamin.com:1935/live/audio_test
