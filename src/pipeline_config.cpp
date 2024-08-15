@@ -176,14 +176,14 @@ std::string PipelineConfig::dump_pipeline_line() {
     {
         if (i > 0)
         {
-            ss << "  ! ";
+            ss << " \\\n<br/>  ! ";
         }
         else
         {
             ss << "  gst-launch-1.0 ";
         }
 
-        ss << m_steps[i] << " \\<br/>";
+        ss << m_steps[i];
 
     }
     return ss.str();

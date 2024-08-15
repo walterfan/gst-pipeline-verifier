@@ -127,22 +127,21 @@ pipelines:
 
   hlsplay:
     desc: playback hls file
-    tags: video
+    tags: video, hls
     steps:
       - filesrc location="/tmp/hls_playlist.m3u8"
       - hlsdemux
       - decodebin
       - videoconvert
-      #- capsfilter caps='video/x-raw(memory:NVMM),format=NV12,width=1920,height=1080'
-      - fpsdisplaysink text-overlay=true
+      - videoscale
+      - autovideosink
 
   tsplay:
     desc: playback mpeg ts file
-    tags: video
+    tags: video, hls
     steps:
       - filesrc location="material/record_20240229135840_00012.ts"
       - tsdemux
       - decodebin
       - videoconvert
-      - capsfilter caps='video/x-raw(memory:NVMM),format=NV12,width=1920,height=1080'
-      - fpsdisplaysink text-overlay=true
+      - autovideosink
