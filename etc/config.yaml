@@ -38,11 +38,10 @@ pipelines:
       - filesrc location=material/talk.mp4
       - decodebin
       - videoconvert
-      - identity drop-allocation=1
-      - openh264enc bitrate=4000000
+      - x264enc
       - videoconvert
       - flvmux streamable=true
-      - rtmpsink location='rtmp://192.168.104.199:1935/live/talktest'
+      - rtmpsink location='rtmp://192.168.104.37:1935/live/talktest'
 
   mp4_play:
     tags: video, mp4

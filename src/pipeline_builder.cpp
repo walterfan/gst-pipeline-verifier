@@ -272,7 +272,7 @@ namespace hefei
                 DLOG("remove/delete succeed for element {}", name);
                 m_elements.erase(it);
                 // need not unref element here becase gst_bin_remove already unref the elements
-                // gst_object_unref(GST_OBJECT(e)); e = nullptr;
+                //gst_object_unref(GST_OBJECT(e)); e = nullptr;
                 return true;
             }
             else

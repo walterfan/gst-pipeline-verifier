@@ -38,6 +38,7 @@ find_package(nlohmann_json 3.11.3 REQUIRED)
 find_package(CURL REQUIRED)
 find_package(GTest REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(prometheus-cpp REQUIRED)
 
 if(NOT spdlog_FOUND)
     message(WARNING "spdlog not found!")

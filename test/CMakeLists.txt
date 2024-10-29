@@ -8,4 +8,4 @@ target_link_libraries(unit_test
     gst-pipeline-util
     CURL::libcurl
     nlohmann_json::nlohmann_json
-    gtest)
+    gtest::gtest)

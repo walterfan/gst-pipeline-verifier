@@ -6,7 +6,8 @@ civetweb/1.16
 nlohmann_json/3.11.3
 libcurl/8.6.0
 gtest/1.14.0
-opencv/4.10.0
+#opencv/4.10.0
+prometheus-cpp/1.2.4
 
 [generators]
 CMakeDeps
